@@ -18,7 +18,7 @@ This document contains the complete conversation between the student and GitHub 
 
 ### Student Question:
 
-> "Hi! I hope you are well. So, I have a subject in asp.net programming, and guidelines in Lab-1 that I would like you to create for my project. The guidelines in Lab-1 are in croatian so watch out for that. I imagined my project as a Crypto Backtesting Dashboard in asp .net technology, and that it would have the following functionalities: That it has the option to upload data about a pair (csv is best I think, but we will see that later, since I think that is not needed for the 1st lab yet), and that from this data a backtest can be created with different parameters (indicators, price action, risk management, etc.), and that the user can save these results and optimize them. For now, create as much as is necessary for the 1st lab."
+> "Hi! I hope you are well. So, I have a subject in asp.net programming, and guidelines in Lab-1 that I would like you to create for my project. The guidelines in Lab-1 are in croatian so watch out for that. I imagined my project as a Crypto Backtesting Dashboard in asp .net technology, and that it would have the following functionalities: That it has the option to upload data about a pair (csv is best I think, but we will see that later, since I think that is not needed for the 1st lab yet), and that from this data a backtest can be created with different parameters (indicators, price action, risk management, etc.), and that the user can save these results and optimize them. For now, create as much as is necessary for the 1st lab. I need some classes for the crypto pair, some for OHLCV candle data, some classes for backtest and some for indicators that we will have."
 
 ### AI Response:
 
