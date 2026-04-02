@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "CryptoBacktestingDashboard/1.0.0": {
+        "runtime": {
+          "CryptoBacktestingDashboard.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "CryptoBacktestingDashboard/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
