@@ -302,7 +302,7 @@ namespace CryptoBacktestingDashboard
             }
         }
 
-        static void DisplayInitializedData(List<CryptoPair> pairs, List<Indicator> indicators, 
+        static void DisplayInitializedData(List<CryptoPair> pairs, List<Indicator> indicators,
             List<RiskManagement> riskManagements, List<BacktestStrategy> strategies, List<BacktestSession> sessions)
         {
             Console.WriteLine("1. CRYPTO PAIRS:");
@@ -342,7 +342,7 @@ namespace CryptoBacktestingDashboard
             }
         }
 
-        static void ExecuteLINQQueries(List<CryptoPair> pairs, List<Indicator> indicators, 
+        static void ExecuteLINQQueries(List<CryptoPair> pairs, List<Indicator> indicators,
             List<RiskManagement> riskManagements, List<BacktestStrategy> strategies, List<BacktestSession> sessions)
         {
             // Query 1: Find all profitable backtest sessions
@@ -351,7 +351,7 @@ namespace CryptoBacktestingDashboard
                 .Where(s => s.GetROI() > 10m)
                 .OrderByDescending(s => s.GetROI())
                 .ToList();
-            
+
             foreach (var session in profitableSessions)
             {
                 Console.WriteLine($"   {session.CryptoPair.Symbol} - ROI: {session.GetROI():F2}%");
@@ -468,13 +468,13 @@ namespace CryptoBacktestingDashboard
         static async Task SimulateBacktestAsync(BacktestStrategy strategy)
         {
             Console.WriteLine($"[ASYNC] Starting backtest for '{strategy.Name}' with ${strategy.InitialCapital} capital...");
-            
+
             // Simulate some async work (like calling an external API or database)
             await Task.Delay(300 + strategy.Id * 100);
-            
+
             var profit = (new Random(strategy.Id)).Next(1000, 5000);
             var roi = (profit / (double)strategy.InitialCapital) * 100;
-            
+
             Console.WriteLine($"[ASYNC] Completed '{strategy.Name}' - Estimated Profit: ${profit} (ROI: {roi:F2}%)");
         }
     }

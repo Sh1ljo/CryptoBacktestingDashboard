@@ -11,10 +11,10 @@ namespace CryptoBacktestingDashboard.Models.Crypto
         public string QuoteAsset { get; set; } // e.g., USD
         public decimal CurrentPrice { get; set; }
         public DateTime CreatedAt { get; set; }
-        
+
         // 1-N relationship: one pair has many candle data points
         public List<CandleData> CandleDataHistory { get; set; }
-        
+
         // N-N relationship: one pair can be used in many backtests
         public List<BacktestSession> BacktestSessions { get; set; }
 
