@@ -1,0 +1,82 @@
+@model List<BacktestStrategy>
+
+@{
+    ViewData["Title"] = "Backtesting Strategies";
+}
+
+<section>
+    <div class="hero">
+        <h1>Trading Strategies</h1>
+        <p class="hero-subtitle">Explore and manage all your trading strategies with technical indicators and risk management</p>
+    </div>
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="grid grid-2">
+            @foreach (var strategy in Model)
+            {
+                <div class="card" style="cursor: pointer;" onclick="window.location.href='@Url.Action("Details", "BacktestStrategy", new { id = strategy.Id })'">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                        <div style="flex: 1;">
+                            <h5 class="card-title">@strategy.Name</h5>
+                        </div>
+                        <span class="badge @(strategy.IsActive ? "badge-success" : "badge-inactive")">
+                            @(strategy.IsActive ? "Active" : "Inactive")
+                        </span>
+                    </div>
+
+                    <p style="color: #505a63; margin-bottom: 1.5rem; min-height: 60px;">
+                        @strategy.Description
+                    </p>
+
+                    <div style="border-bottom: 1px solid #c9c9cd; padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                        <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.5rem; text-transform: uppercase;">Initial Capital</p>
+                        <p style="font-size: 20px; color: #191c1f; font-weight: 600; margin: 0;">
+                            $@strategy.InitialCapital.ToString("F0")
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.5rem; text-transform: uppercase;">Technical Indicators</p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            @foreach (var indicator in strategy.Indicators ?? new List<Indicator>())
+                            {
+                                <span style="background: #f4f4f4; color: #191c1f; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 12px;">
+                                    @indicator.Type
+                                </span>
+                            }
+                            @if ((strategy.Indicators?.Count ?? 0) == 0)
+                            {
+                                <span style="color: #8d969e; font-size: 12px;">No indicators configured</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #c9c9cd;">
+                        <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.3rem; text-transform: uppercase;">Lookback Period</p>
+                        <p style="color: #505a63; margin: 0; font-size: 14px;">
+                            @strategy.LookbackPeriod candles
+                        </p>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.3rem; text-transform: uppercase;">Risk Management</p>
+                        <p style="color: #505a63; margin: 0; font-size: 14px;">
+                            @(strategy.RiskManagement?.Name ?? "Not configured")
+                        </p>
+                    </div>
+
+                    <a asp-action="Details" asp-route-id="@strategy.Id" class="btn btn-primary" style="width: 100%; text-align: center;">
+                        View Details
+                    </a>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <p style="color: #8d969e; font-size: 18px;">No strategies yet. Create your first trading strategy!</p>
+        </div>
+    }
+</section>

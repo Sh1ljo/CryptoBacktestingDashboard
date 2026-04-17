@@ -11,6 +11,12 @@
         "type": "command",
         "command": "powershell.exe -ExecutionPolicy Bypass -File \"C:\\Users\\gabys\\Desktop\\Programiranje\\CryptoBacktestingDashboard\\.github\\hooks\\log-hook.ps1\""
       }
+    ],
+    "SubagentInvoke": [
+      {
+        "type": "command",
+        "command": "powershell.exe -ExecutionPolicy Bypass -File \"C:\\Users\\gabys\\Desktop\\Programiranje\\CryptoBacktestingDashboard\\.github\\hooks\\log-hook.ps1\""
+      }
     ]
   }
 }

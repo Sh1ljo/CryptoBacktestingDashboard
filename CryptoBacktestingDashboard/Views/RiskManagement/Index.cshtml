@@ -1,0 +1,54 @@
+@model List<RiskManagement>
+
+@{
+    ViewData["Title"] = "Risk Management Rules";
+}
+
+<section>
+    <div class="hero">
+        <h1>Risk Management</h1>
+        <p class="hero-subtitle">Configure and manage risk parameters for your trading strategies</p>
+    </div>
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="grid grid-2">
+            @foreach (var risk in Model)
+            {
+                <div class="card" style="cursor: pointer;" onclick="window.location.href='@Url.Action("Details", "RiskManagement", new { id = risk.Id })'">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                        <h5 class="card-title">@risk.Name</h5>
+                        <span class="badge badge-info">@risk.Type</span>
+                    </div>
+
+                    <p style="color: #505a63; margin-bottom: 1.5rem; min-height: 60px;">
+                        @risk.Description
+                    </p>
+
+                    <div style="background: #f4f4f4; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; text-align: center;">
+                        <p style="font-size: 12px; color: #8d969e; margin: 0 0 0.5rem 0; text-transform: uppercase;">Risk Value</p>
+                        <p style="font-size: 36px; color: #191c1f; font-weight: 600; margin: 0;">
+                            @risk.Value%
+                        </p>
+                    </div>
+
+                    <div style="padding-top: 1rem; border-top: 1px solid #c9c9cd;">
+                        <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.5rem; text-transform: uppercase;">
+                            Applied in @(risk.Strategies?.Count ?? 0) strateg@((risk.Strategies?.Count ?? 0) == 1 ? "y" : "ies")
+                        </p>
+                    </div>
+
+                    <a asp-action="Details" asp-route-id="@risk.Id" class="btn btn-primary" style="width: 100%; text-align: center; margin-top: 1rem;">
+                        View Details
+                    </a>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <p style="color: #8d969e; font-size: 18px;">No risk management rules configured yet.</p>
+        </div>
+    }
+</section>

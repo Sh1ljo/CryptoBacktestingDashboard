@@ -1,0 +1,74 @@
+@model List<CryptoPair>
+
+@{
+    ViewData["Title"] = "Crypto Trading Pairs";
+}
+
+<section>
+    <div class="hero">
+        <h1>Trading Pairs</h1>
+        <p class="hero-subtitle">Monitor your favorite cryptocurrency pairs and view their trading history</p>
+    </div>
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="grid grid-3">
+            @foreach (var pair in Model)
+            {
+                var priceChangePercent = 2.5m; // Mock data for visualization
+
+                <div class="card" style="cursor: pointer;" onclick="window.location.href='@Url.Action("Details", "CryptoPair", new { id = pair.Id })'">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                        <div>
+                            <h5 class="card-title">@pair.Symbol</h5>
+                            <p class="card-subtitle" style="margin: 0;">@pair.BaseAsset / @pair.QuoteAsset</p>
+                        </div>
+                        <span class="badge badge-info">
+                            Live
+                        </span>
+                    </div>
+
+                    <div style="background: #f4f4f4; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; text-align: center;">
+                        <p style="font-size: 12px; color: #8d969e; margin: 0 0 0.5rem 0; text-transform: uppercase;">
+                            Current Price
+                        </p>
+                        <p style="font-size: 28px; color: #191c1f; font-weight: 600; margin: 0;">
+                            $@pair.CurrentPrice.ToString("F2")
+                        </p>
+                        <p style="font-size: 12px; color: #00a87e; margin: 0.5rem 0 0 0;">
+                            ↑ @priceChangePercent.ToString("+0.0;-0.0;0")%
+                        </p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #c9c9cd;">
+                        <div class="metric">
+                            <div class="metric-value">@(pair.CandleDataHistory?.Count ?? 0)</div>
+                            <div class="metric-label">Candles</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">@(pair.BacktestSessions?.Count ?? 0)</div>
+                            <div class="metric-label">Backtests</div>
+                        </div>
+                    </div>
+
+                    <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.5rem; text-transform: uppercase;">
+                        Added
+                    </p>
+                    <p style="color: #505a63; margin-bottom: 1.5rem;">
+                        @pair.CreatedAt.ToString("MMM dd, yyyy")
+                    </p>
+
+                    <a asp-action="Details" asp-route-id="@pair.Id" class="btn btn-primary" style="width: 100%; text-align: center;">
+                        View Details
+                    </a>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <p style="color: #8d969e; font-size: 18px;">No crypto pairs configured yet.</p>
+        </div>
+    }
+</section>

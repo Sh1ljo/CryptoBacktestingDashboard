@@ -1,0 +1,66 @@
+@model Indicator
+
+@{
+    ViewData["Title"] = $"Indicator: {Model.Name}";
+}
+
+<nav class="breadcrumbs">
+    <a asp-action="Index" asp-controller="Indicator">Indicators</a>
+    <span>/</span>
+    <span>@Model.Name</span>
+</nav>
+
+<section>
+    <h2>@Model.Name</h2>
+    <p style="font-size: 18px; color: #505a63; margin: 0 0 2rem 0;">@Model.Description</p>
+
+    <div class="grid grid-2">
+        <div class="card">
+            <h6>Indicator Type</h6>
+            <p style="font-size: 24px; color: #191c1f; font-weight: 600; margin: 0.5rem 0;">@Model.Type</p>
+            <p style="color: #8d969e; font-size: 12px; margin: 0; text-transform: uppercase;">Technical Analysis Method</p>
+        </div>
+
+        <div class="card">
+            <h6>Parameters</h6>
+            <p style="margin: 0.5rem 0; color: #505a63;">
+                <strong>Period:</strong> @Model.Period candles
+            </p>
+            <p style="margin: 0; color: #505a63;">
+                <strong>Threshold:</strong> @Model.Threshold
+            </p>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h3>Usage</h3>
+    @if (Model.Strategies != null && Model.Strategies.Count > 0)
+    {
+        <p style="margin-bottom: 1.5rem; color: #505a63;">This indicator is used in the following @Model.Strategies.Count strateg@(Model.Strategies.Count == 1 ? "y" : "ies"):</p>
+        <div class="grid grid-2">
+            @foreach (var strategy in Model.Strategies)
+            {
+                <div class="card">
+                    <h6>@strategy.Name</h6>
+                    <p style="color: #505a63; margin: 0.5rem 0 1rem 0; min-height: 40px;">
+                        @strategy.Description
+                    </p>
+                    <a asp-controller="BacktestStrategy" asp-action="Details" asp-route-id="@strategy.Id" class="btn btn-secondary" style="width: 100%; text-align: center;">
+                        View Strategy
+                    </a>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card" style="padding: 2rem; text-align: center;">
+            <p style="color: #8d969e; margin: 0;">This indicator is not used in any strategies yet.</p>
+        </div>
+    }
+</section>
+
+<section style="display: flex; gap: 1rem;">
+    <a asp-action="Index" class="btn btn-outlined">← Back to Indicators</a>
+</section>

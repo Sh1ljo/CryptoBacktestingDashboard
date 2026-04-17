@@ -1,0 +1,56 @@
+@model List<Indicator>
+
+@{
+    ViewData["Title"] = "Technical Indicators";
+}
+
+<section>
+    <div class="hero">
+        <h1>Technical Indicators</h1>
+        <p class="hero-subtitle">Library of technical indicators available for your trading strategies</p>
+    </div>
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="grid grid-3">
+            @foreach (var indicator in Model)
+            {
+                <div class="card" style="cursor: pointer;" onclick="window.location.href='@Url.Action("Details", "Indicator", new { id = indicator.Id })'">
+                    <h5 class="card-title">@indicator.Name</h5>
+                    <p class="card-subtitle" style="margin-bottom: 1rem;">@indicator.Type</p>
+
+                    <p style="color: #505a63; margin-bottom: 1.5rem; min-height: 50px;">
+                        @indicator.Description
+                    </p>
+
+                    <div style="border-top: 1px solid #c9c9cd; border-bottom: 1px solid #c9c9cd; padding: 1.5rem 0; margin: 1.5rem 0;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div>
+                                <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.3rem; text-transform: uppercase;">Period</p>
+                                <p style="color: #191c1f; font-size: 18px; font-weight: 600; margin: 0;">@indicator.Period</p>
+                            </div>
+                            <div>
+                                <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.3rem; text-transform: uppercase;">Threshold</p>
+                                <p style="color: #191c1f; font-size: 18px; font-weight: 600; margin: 0;">@indicator.Threshold</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.5rem; text-transform: uppercase;">
+                        Used in @(indicator.Strategies?.Count ?? 0) strateg@((indicator.Strategies?.Count ?? 0) == 1 ? "y" : "ies")
+                    </p>
+
+                    <a asp-action="Details" asp-route-id="@indicator.Id" class="btn btn-primary" style="width: 100%; text-align: center;">
+                        View Details
+                    </a>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <p style="color: #8d969e; font-size: 18px;">No indicators configured yet.</p>
+        </div>
+    }
+</section>

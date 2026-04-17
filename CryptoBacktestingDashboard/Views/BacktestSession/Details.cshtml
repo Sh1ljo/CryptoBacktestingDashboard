@@ -1,0 +1,155 @@
+@model BacktestSession
+
+@{
+    ViewData["Title"] = $"Backtest: {Model.Strategy?.Name} - {Model.CryptoPair?.Symbol}";
+    var profit = Model.GetProfit();
+    var roi = Model.GetROI();
+    var profitColor = profit >= 0 ? "#00a87e" : "#e23b4a";
+    var winRate = Model.Results.Count > 0 
+        ? (Model.Results.Count(r => r.IsWinningTrade) * 100 / Model.Results.Count) 
+        : 0;
+    var avgWin = Model.Results.Where(r => r.IsWinningTrade).Average(r => r.GetProfit());
+    var avgLoss = Model.Results.Where(r => !r.IsWinningTrade).Average(r => r.GetProfit());
+}
+
+<nav class="breadcrumbs">
+    <a asp-action="Index" asp-controller="BacktestSession">Sessions</a>
+    <span>/</span>
+    <span>@Model.Strategy?.Name @Model.CryptoPair?.Symbol</span>
+</nav>
+
+<section>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+        <div>
+            <h2>@Model.Strategy?.Name</h2>
+            <p style="font-size: 20px; color: #505a63; margin-bottom: 1rem;">@Model.CryptoPair?.Symbol</p>
+        </div>
+        <span class="badge @(Model.IsOptimized ? "badge-success" : "badge-warning")">
+            @(Model.IsOptimized ? "✓ Optimized" : "⚙ Standard")
+        </span>
+    </div>
+</section>
+
+<section>
+    <h3>Key Metrics</h3>
+    <div class="grid grid-4">
+        <div class="card" style="text-align: center; padding: 2rem;">
+            <div class="metric">
+                <div class="metric-value" style="color: @profitColor;">
+                    $@Math.Abs(profit).ToString("F2")
+                </div>
+                <div class="metric-label">Profit/Loss</div>
+            </div>
+        </div>
+        <div class="card" style="text-align: center; padding: 2rem;">
+            <div class="metric">
+                <div class="metric-value" style="color: @profitColor;">
+                    @roi.ToString("F2")%
+                </div>
+                <div class="metric-label">ROI</div>
+            </div>
+        </div>
+        <div class="card" style="text-align: center; padding: 2rem;">
+            <div class="metric">
+                <div class="metric-value">@Model.Results.Count</div>
+                <div class="metric-label">Total Trades</div>
+            </div>
+        </div>
+        <div class="card" style="text-align: center; padding: 2rem;">
+            <div class="metric">
+                <div class="metric-value">@winRate.ToString("F0")%</div>
+                <div class="metric-label">Win Rate</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h3>Backtest Information</h3>
+    <div class="grid grid-2">
+        <div class="card">
+            <h6>Duration</h6>
+            <p style="color: #505a63; margin: 0.5rem 0 1rem 0;">
+                @Model.StartDate.ToString("MMM dd, yyyy") to @Model.EndDate.ToString("MMM dd, yyyy")
+                <br />
+                <strong>@((Model.EndDate - Model.StartDate).Days) days</strong>
+            </p>
+
+            <h6>Capital</h6>
+            <p style="color: #505a63; margin: 0.5rem 0 0 0;">
+                Starting: <strong>${Model.InitialBalance:F2}</strong><br />
+                Final: <strong style="color: @profitColor;">${Model.FinalBalance:F2}</strong>
+            </p>
+        </div>
+
+        <div class="card">
+            <h6>Strategy Details</h6>
+            <p style="color: #505a63; margin: 0.5rem 0 1rem 0;">
+                @Model.Strategy?.Description
+            </p>
+            <p style="margin: 0.5rem 0; color: #505a63;">
+                <strong>Lookback Period:</strong> @Model.Strategy?.LookbackPeriod candles
+            </p>
+        </div>
+    </div>
+</section>
+
+@if (Model.Results != null && Model.Results.Count > 0)
+{
+    <section>
+        <h3>Trade Results</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Trade #</th>
+                    <th>Type</th>
+                    <th>Entry</th>
+                    <th>Exit</th>
+                    <th>Duration</th>
+                    <th>Profit/Loss</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var result in Model.Results)
+                {
+                    var tradeProfit = result.GetProfit();
+                    var tradeProfitPercent = result.GetProfitPercent();
+                    var tradeProfitColor = tradeProfit >= 0 ? "#00a87e" : "#e23b4a";
+                    var duration = (result.ExitTime - result.EntryTime).TotalDays;
+
+                    <tr>
+                        <td>@result.Id</td>
+                        <td>
+                            <span class="badge @(result.TradeType == TradeType.Long ? "badge-info" : "badge-warning")">
+                                @result.TradeType
+                            </span>
+                        </td>
+                        <td>
+                            $@result.EntryPrice.ToString("F2")<br />
+                            <small style="color: #8d969e;">@result.EntryTime.ToString("MMM dd")</small>
+                        </td>
+                        <td>
+                            $@result.ExitPrice.ToString("F2")<br />
+                            <small style="color: #8d969e;">@result.ExitTime.ToString("MMM dd")</small>
+                        </td>
+                        <td>@duration.ToString("F1") days</td>
+                        <td style="color: @tradeProfitColor; font-weight: bold;">
+                            $@Math.Abs(tradeProfit).ToString("F2") (@tradeProfitPercent.ToString("+0.00;-0.00;0")%)
+                        </td>
+                        <td>
+                            <span class="badge @(result.IsWinningTrade ? "badge-success" : "badge-danger")">
+                                @(result.IsWinningTrade ? "✓ Win" : "✗ Loss")
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+<section style="display: flex; gap: 1rem;">
+    <a asp-action="Index" class="btn btn-outlined">← Back to Sessions</a>
+    <a asp-controller="BacktestStrategy" asp-action="Details" asp-route-id="@Model.StrategyId" class="btn btn-secondary">View Strategy</a>
+</section>

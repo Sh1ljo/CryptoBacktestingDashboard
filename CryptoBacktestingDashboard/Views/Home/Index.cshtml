@@ -1,8 +1,187 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Backtesting Analytics Dashboard";
+    var totalSessions = (int?)ViewData["TotalSessions"] ?? 0;
+    var totalStrategies = (int?)ViewData["TotalStrategies"] ?? 0;
+    var totalPairs = (int?)ViewData["TotalPairs"] ?? 0;
+    var totalTrades = (int?)ViewData["TotalTrades"] ?? 0;
+    var totalProfit = (decimal?)ViewData["TotalProfit"] ?? 0m;
+    var averageROI = (decimal?)ViewData["AverageROI"] ?? 0m;
+    var sessions = (List<BacktestSession>?)ViewData["Sessions"] ?? new List<BacktestSession>();
+    var strategies = (List<BacktestStrategy>?)ViewData["Strategies"] ?? new List<BacktestStrategy>();
+    var profitColor = totalProfit >= 0 ? "#00a87e" : "#e23b4a";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section>
+    <div class="hero" style="margin-bottom: 4rem;">
+        <h1>Analytics Dashboard</h1>
+        <p class="hero-subtitle">Real-time backtesting analytics and performance monitoring for your crypto trading strategies</p>
+    </div>
+
+    <!-- Key Metrics Section -->
+    <h3 style="margin-bottom: 2rem;">Key Performance Metrics</h3>
+    <div class="grid grid-4" style="margin-bottom: 4rem;">
+        <div class="card" style="text-align: center; padding: 2rem;">
+            <div class="metric">
+                <div class="metric-value">@totalProfit.ToString("F0")</div>
+                <div class="metric-label">Total P/L</div>
+            </div>
+            <p style="font-size: 12px; color: @profitColor; margin-top: 0.5rem;">
+                @(totalProfit >= 0 ? "↑" : "↓") Across all sessions
+            </p>
+        </div>
+
+        <div class="card" style="text-align: center; padding: 2rem;">
+            <div class="metric">
+                <div class="metric-value">@averageROI.ToString("F1")%</div>
+                <div class="metric-label">Average ROI</div>
+            </div>
+            <p style="font-size: 12px; color: #8d969e; margin-top: 0.5rem;">Per backtest session</p>
+        </div>
+
+        <div class="card" style="text-align: center; padding: 2rem;">
+            <div class="metric">
+                <div class="metric-value">@totalTrades</div>
+                <div class="metric-label">Total Trades</div>
+            </div>
+            <p style="font-size: 12px; color: #8d969e; margin-top: 0.5rem;">Across all sessions</p>
+        </div>
+
+        <div class="card" style="text-align: center; padding: 2rem;">
+            <div class="metric">
+                <div class="metric-value">@totalSessions</div>
+                <div class="metric-label">Backtest Runs</div>
+            </div>
+            <p style="font-size: 12px; color: #8d969e; margin-top: 0.5rem;">@totalStrategies strategies</p>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <h3 style="margin-bottom: 2rem;">System Overview</h3>
+    <div class="grid grid-3" style="margin-bottom: 4rem;">
+        <div class="card" style="border-left: 4px solid #494fdf;">
+            <h6 style="color: #494fdf; margin-bottom: 1rem;">▶ Trading Strategies</h6>
+            <p style="margin: 0.5rem 0; color: #505a63;">
+                <strong>Active Strategies:</strong><br />
+                <span style="font-size: 18px; color: #191c1f; font-weight: 600;">
+                    @strategies.Count(s => s.IsActive) / @totalStrategies
+                </span>
+            </p>
+        </div>
+
+        <div class="card" style="border-left: 4px solid #00a87e;">
+            <h6 style="color: #00a87e; margin-bottom: 1rem;">◆ Crypto Pairs</h6>
+            <p style="margin: 0.5rem 0; color: #505a63;">
+                <strong>Trading Pairs:</strong><br />
+                <span style="font-size: 18px; color: #191c1f; font-weight: 600;">
+                    @totalPairs active
+                </span>
+            </p>
+        </div>
+
+        <div class="card" style="border-left: 4px solid #ec7e00;">
+            <h6 style="color: #ec7e00; margin-bottom: 1rem;">★ Performance</h6>
+            <p style="margin: 0.5rem 0; color: #505a63;">
+                <strong>Win Rate:</strong><br />
+                <span style="font-size: 18px; color: #191c1f; font-weight: 600;">
+                    @(totalTrades > 0 ? (sessions.Sum(s => s.Results.Count(r => r.IsWinningTrade)) * 100 / totalTrades).ToString("F0") : "0")%
+                </span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Recent Sessions -->
+    @if (sessions.Count > 0)
+    {
+        <h3 style="margin-bottom: 2rem;">Recent Backtest Sessions</h3>
+        <div class="grid grid-2" style="margin-bottom: 4rem;">
+            @foreach (var session in sessions.OrderByDescending(s => s.ExecutedAt).Take(4))
+            {
+                var profit = session.GetProfit();
+                var roi = session.GetROI();
+                var profitColor2 = profit >= 0 ? "#00a87e" : "#e23b4a";
+
+                <div class="card" style="cursor: pointer; transition: all 0.2s ease;" onclick="window.location.href='@Url.Action("Details", "BacktestSession", new { id = session.Id })'">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <div>
+                            <h6>@session.Strategy?.Name</h6>
+                            <p style="margin: 0.3rem 0 0 0; color: #8d969e; font-size: 12px;">@session.CryptoPair?.Symbol</p>
+                        </div>
+                        <span class="badge @(session.IsOptimized ? "badge-success" : "badge-info")">
+                            @(session.IsOptimized ? "Opt" : "Std")
+                        </span>
+                    </div>
+
+                    <div style="background: #f4f4f4; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                        <p style="font-size: 11px; color: #8d969e; margin-bottom: 0.3rem; text-transform: uppercase;">
+                            Profit / ROI
+                        </p>
+                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <span style="font-size: 22px; color: @profitColor2; font-weight: 600;">$@Math.Abs(profit).ToString("F0")</span>
+                            <span style="font-size: 14px; color: @profitColor2; font-weight: 600;">@roi.ToString("F1")%</span>
+                        </div>
+                    </div>
+
+                    <p style="font-size: 12px; color: #8d969e; margin: 0.5rem 0; text-transform: uppercase;">
+                        @session.Results.Count trades • @((session.EndDate - session.StartDate).Days) days
+                    </p>
+
+                    <a asp-controller="BacktestSession" asp-action="Details" asp-route-id="@session.Id" class="btn btn-secondary" style="width: 100%; text-align: center; margin-top: 1rem; font-size: 12px; padding: 10px 20px;">
+                        View Details →
+                    </a>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Top Strategies -->
+    @if (strategies.Count > 0)
+    {
+        <h3 style="margin-bottom: 2rem;">Top Trading Strategies</h3>
+        <div class="grid grid-1" style="margin-bottom: 4rem;">
+            @foreach (var strategy in strategies.OrderByDescending(s => s.IsActive).ThenBy(s => s.Name).Take(3))
+            {
+                var sessionCount = sessions.Count(s => s.StrategyId == strategy.Id);
+                var avgROI = sessionCount > 0 ? sessions.Where(s => s.StrategyId == strategy.Id).Average(s => s.GetROI()) : 0;
+
+                <div class="card" style="cursor: pointer;" onclick="window.location.href='@Url.Action("Details", "BacktestStrategy", new { id = strategy.Id })'">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <h6>@strategy.Name</h6>
+                            <p style="color: #505a63; margin: 0.5rem 0 1rem 0;">@strategy.Description</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="font-size: 18px; color: #191c1f; font-weight: 600; margin: 0;">@sessionCount</p>
+                            <p style="font-size: 11px; color: #8d969e; margin: 0; text-transform: uppercase;">Backtests</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #c9c9cd;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div>
+                                <p style="font-size: 11px; color: #8d969e; margin-bottom: 0.3rem; text-transform: uppercase;">Avg ROI</p>
+                                <p style="font-size: 18px; color: #191c1f; font-weight: 600; margin: 0;">@avgROI.ToString("F1")%</p>
+                            </div>
+                            <div>
+                                <p style="font-size: 11px; color: #8d969e; margin-bottom: 0.3rem; text-transform: uppercase;">Status</p>
+                                <p style="font-size: 14px; margin: 0;">
+                                    <span class="badge @(strategy.IsActive ? "badge-success" : "badge-inactive")">
+                                        @(strategy.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+            <a asp-controller="BacktestSession" asp-action="Index" class="btn btn-primary" style="text-align: center;">
+                View All Sessions
+            </a>
+            <a asp-controller="BacktestStrategy" asp-action="Index" class="btn btn-secondary" style="text-align: center;">
+                View All Strategies
+            </a>
+        </div>
+    }
+</section>

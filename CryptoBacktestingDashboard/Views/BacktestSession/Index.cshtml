@@ -1,0 +1,86 @@
+@model List<BacktestSession>
+
+@{
+    ViewData["Title"] = "Backtest Sessions";
+}
+
+<section>
+    <div class="hero">
+        <h1>Backtest Sessions</h1>
+        <p class="hero-subtitle">View and analyze all your backtesting runs across different strategies and crypto pairs</p>
+    </div>
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="grid grid-2">
+            @foreach (var session in Model)
+            {
+                var profit = session.GetProfit();
+                var roi = session.GetROI();
+                var profitColor = profit >= 0 ? "var(--rui-success)" : "var(--rui-danger)";
+                var winRate = session.Results.Count > 0 
+                    ? (session.Results.Count(r => r.IsWinningTrade) * 100 / session.Results.Count) 
+                    : 0;
+
+                <div class="card" style="cursor: pointer;" onclick="window.location.href='@Url.Action("Details", "BacktestSession", new { id = session.Id })'">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                        <div>
+                            <h5 class="card-title">@session.Strategy?.Name</h5>
+                            <p class="card-subtitle">@session.CryptoPair?.Symbol</p>
+                        </div>
+                        <span class="badge @(session.IsOptimized ? "badge-success" : "badge-info")">
+                            @(session.IsOptimized ? "Optimized" : "Standard")
+                        </span>
+                    </div>
+
+                    <div style="border-bottom: 1px solid #c9c9cd; padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                        <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.5rem; text-transform: uppercase;">
+                            @session.StartDate.ToString("MMM dd, yyyy") - @session.EndDate.ToString("MMM dd, yyyy")
+                        </p>
+                        <p style="font-size: 14px; color: #505a63;">
+                            Duration: @((session.EndDate - session.StartDate).Days) days
+                        </p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div class="metric">
+                            <div class="metric-value" style="color: @profitColor;">
+                                $@Math.Abs(profit).ToString("F2")
+                            </div>
+                            <div class="metric-label">Profit/Loss</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value" style="color: @profitColor;">
+                                @roi.ToString("F1")%
+                            </div>
+                            <div class="metric-label">ROI</div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="metric">
+                            <div class="metric-value">@session.Results.Count</div>
+                            <div class="metric-label">Total Trades</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">@winRate.ToString("F0")%</div>
+                            <div class="metric-label">Win Rate</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #c9c9cd;">
+                        <a asp-action="Details" asp-route-id="@session.Id" class="btn btn-primary" style="width: 100%; text-align: center;">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <p style="color: #8d969e; font-size: 18px;">No backtest sessions yet. Create your first strategy and run a backtest!</p>
+        </div>
+    }
+</section>

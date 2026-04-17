@@ -1,0 +1,144 @@
+@model CryptoPair
+
+@{
+    ViewData["Title"] = $"Pair: {Model.Symbol}";
+}
+
+<nav class="breadcrumbs">
+    <a asp-action="Index" asp-controller="CryptoPair">Pairs</a>
+    <span>/</span>
+    <span>@Model.Symbol</span>
+</nav>
+
+<section>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+        <div>
+            <h2>@Model.Symbol</h2>
+            <p style="font-size: 18px; color: #505a63; margin: 0;">@Model.BaseAsset / @Model.QuoteAsset trading pair</p>
+        </div>
+        <span class="badge badge-success">Live</span>
+    </div>
+</section>
+
+<section>
+    <h3>Market Data</h3>
+    <div class="grid grid-2">
+        <div class="card">
+            <h6>Current Price</h6>
+            <div style="display: flex; align-items: baseline; gap: 1rem;">
+                <div class="metric-value" style="font-size: 48px; margin: 0;">
+                    $@Model.CurrentPrice.ToString("F2")
+                </div>
+                <span style="color: #00a87e; font-size: 14px; font-weight: 600;">↑ +2.50%</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h6>Trading Information</h6>
+            <p style="margin: 0.5rem 0; color: #505a63;">
+                <strong>Base Asset:</strong> @Model.BaseAsset
+            </p>
+            <p style="margin: 0.5rem 0; color: #505a63;">
+                <strong>Quote Asset:</strong> @Model.QuoteAsset
+            </p>
+            <p style="margin: 0; color: #505a63;">
+                <strong>Added:</strong> @Model.CreatedAt.ToString("MMM dd, yyyy")
+            </p>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h3>Candle Data History</h3>
+    @if (Model.CandleDataHistory != null && Model.CandleDataHistory.Count > 0)
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Open</th>
+                    <th>High</th>
+                    <th>Low</th>
+                    <th>Close</th>
+                    <th>Volume</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var candle in Model.CandleDataHistory.OrderByDescending(c => c.OpenTime).Take(20))
+                {
+                    <tr>
+                        <td>@candle.OpenTime.ToString("MMM dd, HH:mm")</td>
+                        <td>$@candle.Open.ToString("F2")</td>
+                        <td>$@candle.High.ToString("F2")</td>
+                        <td>$@candle.Low.ToString("F2")</td>
+                        <td style="font-weight: 600;">$@candle.Close.ToString("F2")</td>
+                        <td>@candle.Volume.ToString("F0")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p style="color: #8d969e; font-size: 12px; text-align: center;">
+            Showing latest 20 candles • Total: @Model.CandleDataHistory.Count
+        </p>
+    }
+    else
+    {
+        <div class="card" style="padding: 2rem; text-align: center;">
+            <p style="color: #8d969e; margin: 0;">No candle data available yet.</p>
+        </div>
+    }
+</section>
+
+<section>
+    <h3>Backtest History</h3>
+    @if (Model.BacktestSessions != null && Model.BacktestSessions.Count > 0)
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Strategy</th>
+                    <th>Period</th>
+                    <th>Profit/Loss</th>
+                    <th>ROI</th>
+                    <th>Trades</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var session in Model.BacktestSessions)
+                {
+                    var profit = session.GetProfit();
+                    var roi = session.GetROI();
+                    var profitColor = profit >= 0 ? "#00a87e" : "#e23b4a";
+
+                    <tr>
+                        <td>
+                            <a asp-controller="BacktestStrategy" asp-action="Details" asp-route-id="@session.StrategyId">
+                                @session.Strategy?.Name
+                            </a>
+                        </td>
+                        <td>@session.StartDate.ToString("MMM dd") - @session.EndDate.ToString("MMM dd")</td>
+                        <td style="color: @profitColor; font-weight: 600;">$@Math.Abs(profit).ToString("F2")</td>
+                        <td style="color: @profitColor; font-weight: 600;">@roi.ToString("F1")%</td>
+                        <td>@session.Results.Count</td>
+                        <td>
+                            <a asp-controller="BacktestSession" asp-action="Details" asp-route-id="@session.Id" class="btn btn-secondary" style="font-size: 12px; padding: 0.4rem 0.8rem;">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="card" style="padding: 2rem; text-align: center;">
+            <p style="color: #8d969e; margin: 0;">No backtest sessions for this pair yet.</p>
+        </div>
+    }
+</section>
+
+<section style="display: flex; gap: 1rem;">
+    <a asp-action="Index" class="btn btn-outlined">← Back to Pairs</a>
+</section>

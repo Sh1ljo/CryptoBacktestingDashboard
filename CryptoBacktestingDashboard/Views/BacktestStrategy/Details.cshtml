@@ -1,0 +1,116 @@
+@model BacktestStrategy
+
+@{
+    ViewData["Title"] = $"Strategy: {Model.Name}";
+}
+
+<nav class="breadcrumbs">
+    <a asp-action="Index" asp-controller="BacktestStrategy">Strategies</a>
+    <span>/</span>
+    <span>@Model.Name</span>
+</nav>
+
+<section>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+        <div>
+            <h2>@Model.Name</h2>
+            <p style="font-size: 18px; color: #505a63; margin: 0;">@Model.Description</p>
+        </div>
+        <span class="badge @(Model.IsActive ? "badge-success" : "badge-inactive")">
+            @(Model.IsActive ? "✓ Active" : "Inactive")
+        </span>
+    </div>
+</section>
+
+<section>
+    <h3>Configuration</h3>
+    <div class="grid grid-2">
+        <div class="card">
+            <h6>Capital & Period</h6>
+            <p style="margin: 0.5rem 0; color: #505a63;">
+                <strong>Initial Capital:</strong><br />
+                <span style="font-size: 20px; color: #191c1f; font-weight: 600;">$@Model.InitialCapital</span>
+            </p>
+            <hr style="margin: 1rem 0;">
+            <p style="margin: 0; color: #505a63;">
+                <strong>Lookback Period:</strong><br />
+                <span style="font-size: 18px; color: #191c1f; font-weight: 600;">@Model.LookbackPeriod candles</span>
+            </p>
+        </div>
+
+        <div class="card">
+            <h6>Timestamps</h6>
+            <p style="margin: 0.5rem 0; color: #505a63;">
+                <strong>Created:</strong><br />
+                @Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")
+            </p>
+            <hr style="margin: 1rem 0;">
+            <p style="margin: 0; color: #505a63;">
+                <strong>Last Modified:</strong><br />
+                @(Model.LastModifiedAt?.ToString("MMM dd, yyyy HH:mm") ?? "Never")
+            </p>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h3>Technical Indicators</h3>
+    @if (Model.Indicators != null && Model.Indicators.Count > 0)
+    {
+        <div class="grid grid-2">
+            @foreach (var indicator in Model.Indicators)
+            {
+                <div class="card">
+                    <h6>@indicator.Name</h6>
+                    <p style="color: #505a63; margin: 0.5rem 0 1rem 0;">
+                        @indicator.Description
+                    </p>
+                    <p style="margin: 0.3rem 0; color: #505a63; font-size: 14px;">
+                        <strong>Type:</strong> @indicator.Type
+                    </p>
+                    <p style="margin: 0.3rem 0; color: #505a63; font-size: 14px;">
+                        <strong>Period:</strong> @indicator.Period
+                    </p>
+                    <p style="margin: 0; color: #505a63; font-size: 14px;">
+                        <strong>Threshold:</strong> @indicator.Threshold
+                    </p>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card" style="padding: 2rem;">
+            <p style="color: #8d969e; margin: 0;">No indicators configured for this strategy.</p>
+        </div>
+    }
+</section>
+
+<section>
+    <h3>Risk Management</h3>
+    @if (Model.RiskManagement != null)
+    {
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h6>@Model.RiskManagement.Name</h6>
+                <span class="badge badge-info">@Model.RiskManagement.Type</span>
+            </div>
+            <p style="color: #505a63; margin: 0.5rem 0 1rem 0;">
+                @Model.RiskManagement.Description
+            </p>
+            <p style="margin: 0; color: #505a63; font-size: 14px;">
+                <strong>Value:</strong> @Model.RiskManagement.Value%
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="card" style="padding: 2rem;">
+            <p style="color: #8d969e; margin: 0;">No risk management rules configured.</p>
+        </div>
+    }
+</section>
+
+<section style="display: flex; gap: 1rem;">
+    <a asp-action="Index" class="btn btn-outlined">← Back to Strategies</a>
+</section>
