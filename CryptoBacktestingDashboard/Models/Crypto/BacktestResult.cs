@@ -1,4 +1,6 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CryptoBacktestingDashboard.Models.Crypto
 {
@@ -10,7 +12,9 @@ namespace CryptoBacktestingDashboard.Models.Crypto
 
     public class BacktestResult
     {
+        [Key]
         public int Id { get; set; }
+        [ForeignKey("BacktestSession")]
         public int BacktestSessionId { get; set; }
         public TradeType TradeType { get; set; }
         public DateTime EntryTime { get; set; }
@@ -22,7 +26,7 @@ namespace CryptoBacktestingDashboard.Models.Crypto
         public bool IsWinningTrade { get; set; }
 
         // Foreign key
-        public BacktestSession BacktestSession { get; set; }
+        public virtual BacktestSession? BacktestSession { get; set; }
 
         public BacktestResult()
         {

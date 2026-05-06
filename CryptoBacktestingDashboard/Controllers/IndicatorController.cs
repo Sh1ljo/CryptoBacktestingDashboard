@@ -1,26 +1,27 @@
-using CryptoBacktestingDashboard.Repositories;
+using CryptoBacktestingDashboard.Repositories.EF;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace CryptoBacktestingDashboard.Controllers
 {
     public class IndicatorController : Controller
     {
-        private readonly IndicatorMockRepository _indicatorRepository;
+        private readonly IndicatorRepository _indicatorRepository;
 
-        public IndicatorController(IndicatorMockRepository indicatorRepository)
+        public IndicatorController(IndicatorRepository indicatorRepository)
         {
             _indicatorRepository = indicatorRepository;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var indicators = _indicatorRepository.GetAll();
+            var indicators = await _indicatorRepository.GetItemsAsync();
             return View(indicators);
         }
 
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            var indicator = _indicatorRepository.GetById(id);
+            var indicator = await _indicatorRepository.GetItemAsync(id);
             if (indicator == null)
                 return NotFound();
 

@@ -166,7 +166,7 @@ body > header {
     font-size: 16px;
     font-weight: 500;
     color: var(--rui-dark);
-    margin-right: auto;
+    margin-right: var(--space-3xl);
     display: block;
     letter-spacing: -0.16px;
 }

@@ -100,7 +100,7 @@ namespace CryptoBacktestingDashboard.Repositories
             return _strategies;
         }
 
-        public BacktestStrategy GetById(int id)
+        public BacktestStrategy? GetById(int id)
         {
             return _strategies.FirstOrDefault(s => s.Id == id);
         }

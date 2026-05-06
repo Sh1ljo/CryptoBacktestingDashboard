@@ -1,27 +1,28 @@
 using CryptoBacktestingDashboard.Models.Crypto;
-using CryptoBacktestingDashboard.Repositories;
+using CryptoBacktestingDashboard.Repositories.EF;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace CryptoBacktestingDashboard.Controllers
 {
     public class CryptoPairController : Controller
     {
-        private readonly CryptoPairMockRepository _pairRepository;
+        private readonly CryptoPairRepository _pairRepository;
 
-        public CryptoPairController(CryptoPairMockRepository pairRepository)
+        public CryptoPairController(CryptoPairRepository pairRepository)
         {
             _pairRepository = pairRepository;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var pairs = _pairRepository.GetAll();
+            var pairs = await _pairRepository.GetItemsAsync();
             return View(pairs);
         }
 
-        public IActionResult Details(int id)
+        public async Task<IActionResult> Details(int id)
         {
-            var pair = _pairRepository.GetById(id);
+            var pair = await _pairRepository.GetItemAsync(id);
             if (pair == null)
                 return NotFound();
 

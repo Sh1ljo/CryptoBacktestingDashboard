@@ -1,12 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CryptoBacktestingDashboard.Models.Crypto
 {
     public class BacktestSession
     {
+        [Key]
         public int Id { get; set; }
+        [ForeignKey("Strategy")]
         public int StrategyId { get; set; }
+        [ForeignKey("CryptoPair")]
         public int CryptoPairId { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
@@ -16,11 +21,11 @@ namespace CryptoBacktestingDashboard.Models.Crypto
         public bool IsOptimized { get; set; }
 
         // Foreign keys
-        public BacktestStrategy Strategy { get; set; }
-        public CryptoPair CryptoPair { get; set; }
+        public virtual BacktestStrategy? Strategy { get; set; }
+        public virtual CryptoPair? CryptoPair { get; set; }
 
         // 1-N relationship: Session has many results/trades
-        public List<BacktestResult> Results { get; set; }
+        public virtual ICollection<BacktestResult> Results { get; set; }
 
         public BacktestSession()
         {

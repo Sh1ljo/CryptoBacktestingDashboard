@@ -8,8 +8,12 @@
     var winRate = Model.Results.Count > 0 
         ? (Model.Results.Count(r => r.IsWinningTrade) * 100 / Model.Results.Count) 
         : 0;
-    var avgWin = Model.Results.Where(r => r.IsWinningTrade).Average(r => r.GetProfit());
-    var avgLoss = Model.Results.Where(r => !r.IsWinningTrade).Average(r => r.GetProfit());
+    var avgWin = Model.Results.Where(r => r.IsWinningTrade).Any() 
+        ? Model.Results.Where(r => r.IsWinningTrade).Average(r => r.GetProfit()) 
+        : 0;
+    var avgLoss = Model.Results.Where(r => !r.IsWinningTrade).Any() 
+        ? Model.Results.Where(r => !r.IsWinningTrade).Average(r => r.GetProfit()) 
+        : 0;
 }
 
 <nav class="breadcrumbs">
@@ -77,8 +81,8 @@
 
             <h6>Capital</h6>
             <p style="color: #505a63; margin: 0.5rem 0 0 0;">
-                Starting: <strong>${Model.InitialBalance:F2}</strong><br />
-                Final: <strong style="color: @profitColor;">${Model.FinalBalance:F2}</strong>
+                Starting: <strong>$@Model.InitialBalance.ToString("F2")</strong><br />
+                Final: <strong style="color: @profitColor;">$@Model.FinalBalance.ToString("F2")</strong>
             </p>
         </div>
 

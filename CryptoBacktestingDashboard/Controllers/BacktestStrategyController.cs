@@ -1,27 +1,31 @@
 using CryptoBacktestingDashboard.Models.Crypto;
-using CryptoBacktestingDashboard.Repositories;
+using CryptoBacktestingDashboard.Repositories.EF;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace CryptoBacktestingDashboard.Controllers
 {
+    [Route("strategies")]
     public class BacktestStrategyController : Controller
     {
-        private readonly BacktestStrategyMockRepository _strategyRepository;
+        private readonly BacktestStrategyRepository _strategyRepository;
 
-        public BacktestStrategyController(BacktestStrategyMockRepository strategyRepository)
+        public BacktestStrategyController(BacktestStrategyRepository strategyRepository)
         {
             _strategyRepository = strategyRepository;
         }
 
-        public IActionResult Index()
+        [HttpGet("")]
+        public async Task<IActionResult> Index()
         {
-            var strategies = _strategyRepository.GetAll();
+            var strategies = await _strategyRepository.GetItemsAsync();
             return View(strategies);
         }
 
-        public IActionResult Details(int id)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> Details(int id)
         {
-            var strategy = _strategyRepository.GetById(id);
+            var strategy = await _strategyRepository.GetItemAsync(id);
             if (strategy == null)
                 return NotFound();
 

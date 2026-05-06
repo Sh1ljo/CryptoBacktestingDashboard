@@ -1,10 +1,14 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CryptoBacktestingDashboard.Models.Crypto
 {
     public class CandleData
     {
+        [Key]
         public int Id { get; set; }
+        [ForeignKey("CryptoPair")]
         public int CryptoPairId { get; set; }
         public decimal Open { get; set; }
         public decimal High { get; set; }
@@ -15,7 +19,7 @@ namespace CryptoBacktestingDashboard.Models.Crypto
         public DateTime CloseTime { get; set; }
 
         // Foreign key relationship
-        public CryptoPair CryptoPair { get; set; }
+        public virtual CryptoPair? CryptoPair { get; set; }
 
         public CandleData()
         {

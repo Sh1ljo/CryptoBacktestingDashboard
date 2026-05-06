@@ -1,22 +1,25 @@
 using CryptoBacktestingDashboard.Models;
-using CryptoBacktestingDashboard.Repositories;
+using CryptoBacktestingDashboard.Repositories.EF;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace CryptoBacktestingDashboard.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly BacktestSessionMockRepository _sessionRepository;
-        private readonly BacktestStrategyMockRepository _strategyRepository;
-        private readonly CryptoPairMockRepository _pairRepository;
+        private readonly BacktestSessionRepository _sessionRepository;
+        private readonly BacktestStrategyRepository _strategyRepository;
+        private readonly CryptoPairRepository _pairRepository;
 
         public HomeController(
             ILogger<HomeController> logger,
-            BacktestSessionMockRepository sessionRepository,
-            BacktestStrategyMockRepository strategyRepository,
-            CryptoPairMockRepository pairRepository)
+            BacktestSessionRepository sessionRepository,
+            BacktestStrategyRepository strategyRepository,
+            CryptoPairRepository pairRepository)
         {
             _logger = logger;
             _sessionRepository = sessionRepository;
@@ -24,11 +27,11 @@ namespace CryptoBacktestingDashboard.Controllers
             _pairRepository = pairRepository;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var sessions = _sessionRepository.GetAll();
-            var strategies = _strategyRepository.GetAll();
-            var pairs = _pairRepository.GetAll();
+            var sessions = await _sessionRepository.GetItemsAsync();
+            var strategies = await _strategyRepository.GetItemsAsync();
+            var pairs = await _pairRepository.GetItemsAsync();
 
             ViewData["TotalSessions"] = sessions.Count;
             ViewData["TotalStrategies"] = strategies.Count;

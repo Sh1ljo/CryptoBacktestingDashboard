@@ -66,7 +66,7 @@ namespace CryptoBacktestingDashboard.Repositories
             return _riskManagements;
         }
 
-        public RiskManagement GetById(int id)
+        public RiskManagement? GetById(int id)
         {
             return _riskManagements.FirstOrDefault(r => r.Id == id);
         }

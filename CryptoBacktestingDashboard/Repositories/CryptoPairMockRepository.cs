@@ -49,7 +49,7 @@ namespace CryptoBacktestingDashboard.Repositories
             return _pairs;
         }
 
-        public CryptoPair GetById(int id)
+        public CryptoPair? GetById(int id)
         {
             return _pairs.FirstOrDefault(p => p.Id == id);
         }

@@ -190,7 +190,7 @@ namespace CryptoBacktestingDashboard.Repositories
             return _sessions;
         }
 
-        public BacktestSession GetById(int id)
+        public BacktestSession? GetById(int id)
         {
             return _sessions.FirstOrDefault(s => s.Id == id);
         }

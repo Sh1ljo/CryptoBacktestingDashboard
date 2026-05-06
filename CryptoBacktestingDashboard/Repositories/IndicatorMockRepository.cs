@@ -82,7 +82,7 @@ namespace CryptoBacktestingDashboard.Repositories
             return _indicators;
         }
 
-        public Indicator GetById(int id)
+        public Indicator? GetById(int id)
         {
             return _indicators.FirstOrDefault(i => i.Id == id);
         }

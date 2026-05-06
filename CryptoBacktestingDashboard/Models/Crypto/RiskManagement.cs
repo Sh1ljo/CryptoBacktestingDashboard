@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace CryptoBacktestingDashboard.Models.Crypto
 {
@@ -14,15 +15,16 @@ namespace CryptoBacktestingDashboard.Models.Crypto
 
     public class RiskManagement
     {
+        [Key]
         public int Id { get; set; }
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public RiskManagementType Type { get; set; }
         public decimal Value { get; set; } // Value in % or fixed amount
-        public string Description { get; set; }
+        public string? Description { get; set; }
         public DateTime CreatedAt { get; set; }
 
         // 1-N relationship: one risk management can be used in many strategies
-        public List<BacktestStrategy> Strategies { get; set; }
+        public virtual ICollection<BacktestStrategy> Strategies { get; set; }
 
         public RiskManagement()
         {

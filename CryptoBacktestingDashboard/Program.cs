@@ -1,23 +1,52 @@
-﻿using CryptoBacktestingDashboard.Repositories;
+﻿using CryptoBacktestingDashboard.Data;
+using CryptoBacktestingDashboard.Repositories;
+using CryptoBacktestingDashboard.Repositories.EF;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add services to the container.
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddControllersWithViews();
-builder.Services.AddSingleton<BacktestSessionMockRepository>();
-builder.Services.AddSingleton<BacktestStrategyMockRepository>();
-builder.Services.AddSingleton<CryptoPairMockRepository>();
-builder.Services.AddSingleton<IndicatorMockRepository>();
-builder.Services.AddSingleton<RiskManagementMockRepository>();
+builder.Services.AddScoped<BacktestSessionRepository>();
+builder.Services.AddScoped<BacktestStrategyRepository>();
+builder.Services.AddScoped<CryptoPairRepository>();
+builder.Services.AddScoped<IndicatorRepository>();
+builder.Services.AddScoped<RiskManagementRepository>();
+
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database.");
+    }
+}
+
+// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
