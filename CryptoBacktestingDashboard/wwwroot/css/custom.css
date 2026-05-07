@@ -29,8 +29,8 @@
     --rui-gray-tone: #c9c9cd;
     
     /* Typography */
-    --font-display: 'Aeonik Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    --font-display: 'Gilroy', 'Aeonik Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    --font-body: 'Inter', 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
     
     /* Spacing */
     --space-xs: 4px;
@@ -71,54 +71,54 @@ body {
 
 h1 {
     font-family: var(--font-display);
-    font-size: 32px;
-    font-weight: 500;
-    line-height: 1.20;
-    letter-spacing: -0.32px;
+    font-size: 48px;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.48px;
     margin-bottom: var(--space-md);
 }
 
 h2 {
     font-family: var(--font-display);
-    font-size: 28px;
-    font-weight: 500;
-    line-height: 1.20;
-    letter-spacing: -0.28px;
+    font-size: 36px;
+    font-weight: 600;
+    line-height: 1.18;
+    letter-spacing: -0.36px;
     margin-bottom: var(--space-md);
 }
 
 h3 {
     font-family: var(--font-display);
-    font-size: 24px;
-    font-weight: 500;
-    line-height: 1.25;
-    letter-spacing: -0.24px;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.20;
+    letter-spacing: -0.28px;
     margin-bottom: var(--space-sm);
 }
 
 h4 {
     font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 500;
-    line-height: 1.30;
-    letter-spacing: -0.20px;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.24px;
     margin-bottom: var(--space-sm);
 }
 
 h5 {
     font-family: var(--font-display);
-    font-size: 18px;
-    font-weight: 500;
-    line-height: 1.33;
-    letter-spacing: -0.18px;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.28;
+    letter-spacing: -0.20px;
     margin-bottom: var(--space-sm);
 }
 
 h6 {
     font-family: var(--font-display);
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 1.40;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.33;
     margin-bottom: var(--space-sm);
 }
 
@@ -173,7 +173,7 @@ body > header {
 
 .nav-links {
     display: flex;
-    gap: var(--space-md);
+    gap: var(--space-xl);
     list-style: none;
     align-items: center;
     justify-content: center;
@@ -531,17 +531,17 @@ hr {
     main {
         padding: var(--space-2xl) var(--space-md);
     }
-    
+
     h1 {
-        font-size: 80px;
-        letter-spacing: -1.60px;
+        font-size: 42px;
+        letter-spacing: -0.42px;
     }
-    
+
     h2 {
-        font-size: 56px;
-        letter-spacing: -0.56px;
+        font-size: 32px;
+        letter-spacing: -0.32px;
     }
-    
+
     .grid-2, .grid-3, .grid-4 {
         grid-template-columns: 1fr;
     }
