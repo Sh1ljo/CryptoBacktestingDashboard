@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet --version)",
+      "Bash(dotnet tool *)",
+      "Bash(dotnet-ef database *)",
+      "Bash(sqlcmd *)",
+      "Bash(powershell *)",
+      "Bash(cd /CryptoBacktestingDashboard)",
+      "Bash(find . -name \"*.css\")",
+      "Bash(dotnet build *)"
+    ]
+  }
+}
