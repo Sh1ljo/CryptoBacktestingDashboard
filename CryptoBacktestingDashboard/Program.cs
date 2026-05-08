@@ -20,6 +20,7 @@ builder.Services.AddScoped<BacktestStrategyRepository>();
 builder.Services.AddScoped<CryptoPairRepository>();
 builder.Services.AddScoped<IndicatorRepository>();
 builder.Services.AddScoped<RiskManagementRepository>();
+builder.Services.AddScoped<CandleDataRepository>();
 
 
 var app = builder.Build();

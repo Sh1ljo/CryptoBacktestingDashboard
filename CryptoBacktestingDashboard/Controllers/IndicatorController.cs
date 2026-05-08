@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace CryptoBacktestingDashboard.Controllers
 {
+    [Route("indicators")]
     public class IndicatorController : Controller
     {
         private readonly IndicatorRepository _indicatorRepository;
@@ -13,12 +14,14 @@ namespace CryptoBacktestingDashboard.Controllers
             _indicatorRepository = indicatorRepository;
         }
 
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
             var indicators = await _indicatorRepository.GetItemsAsync();
             return View(indicators);
         }
 
+        [HttpGet("{id}")]
         public async Task<IActionResult> Details(int id)
         {
             var indicator = await _indicatorRepository.GetItemAsync(id);

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace CryptoBacktestingDashboard.Controllers
 {
+    [Route("risk")]
     public class RiskManagementController : Controller
     {
         private readonly RiskManagementRepository _riskManagementRepository;
@@ -13,12 +14,14 @@ namespace CryptoBacktestingDashboard.Controllers
             _riskManagementRepository = riskManagementRepository;
         }
 
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
             var riskManagements = await _riskManagementRepository.GetItemsAsync();
             return View(riskManagements);
         }
 
+        [HttpGet("{id}")]
         public async Task<IActionResult> Details(int id)
         {
             var riskManagement = await _riskManagementRepository.GetItemAsync(id);

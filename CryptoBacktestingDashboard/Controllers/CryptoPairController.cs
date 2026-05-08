@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace CryptoBacktestingDashboard.Controllers
 {
+    [Route("pairs")]
     public class CryptoPairController : Controller
     {
         private readonly CryptoPairRepository _pairRepository;
@@ -14,12 +15,14 @@ namespace CryptoBacktestingDashboard.Controllers
             _pairRepository = pairRepository;
         }
 
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
             var pairs = await _pairRepository.GetItemsAsync();
             return View(pairs);
         }
 
+        [HttpGet("{id}")]
         public async Task<IActionResult> Details(int id)
         {
             var pair = await _pairRepository.GetItemAsync(id);
