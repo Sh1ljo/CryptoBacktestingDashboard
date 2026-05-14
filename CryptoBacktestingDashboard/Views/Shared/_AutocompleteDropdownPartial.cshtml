@@ -1,0 +1,82 @@
+@model AutocompleteViewModel
+
+@{
+    var controlId = Model.PropertyName + "Autocomplete";
+    var hiddenId = Model.PropertyName;
+}
+
+<div class="form-group position-relative autocomplete-container">
+    <label asp-for="@Model.PropertyName" class="control-label">@Model.DisplayName</label>
+    
+    <!-- Visible Search Input -->
+    <input type="text" id="@controlId" class="form-control" value="@Model.InitialText" placeholder="Search @Model.DisplayName..." autocomplete="off" />
+    
+    <!-- Hidden input for binding the ID -->
+    <input type="hidden" name="@Model.PropertyName" id="@hiddenId" value="@Model.InitialValue" />
+    
+    <!-- Validation span -->
+    <span class="text-danger field-validation-valid" data-valmsg-for="@Model.PropertyName" data-valmsg-replace="true"></span>
+    
+    <!-- Dropdown results -->
+    <ul id="@(controlId)Results" class="list-group position-absolute w-100" style="display: none; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></ul>
+</div>
+
+<script>
+    // Note: ensure jQuery is loaded.
+    $(document).ready(function () {
+        var searchInput = $('#@controlId');
+        var hiddenInput = $('#@hiddenId');
+        var resultsList = $('#@(controlId)Results');
+        var fetchUrl = '@Model.SearchUrl';
+
+        searchInput.on('input', function () {
+            var query = $(this).val();
+            
+            // If empty, clear hidden input
+            if (!query) {
+                hiddenInput.val('');
+                resultsList.hide();
+                return;
+            }
+
+            $.ajax({
+                url: fetchUrl,
+                data: { query: query },
+                success: function (data) {
+                    resultsList.empty();
+                    if (data.length > 0) {
+                        $.each(data, function (i, item) {
+                            var li = $('<li class="list-group-item list-group-item-action cursor-pointer"></li>')
+                                .text(item.text)
+                                .data('id', item.id)
+                                .data('text', item.text);
+                                
+                            li.on('click', function () {
+                                searchInput.val($(this).data('text'));
+                                hiddenInput.val($(this).data('id'));
+                                resultsList.hide();
+                                // Trigger validation re-check on select
+                                hiddenInput.trigger('change');
+                                hiddenInput.trigger('blur');
+                            });
+                            
+                            resultsList.append(li);
+                        });
+                        resultsList.show();
+                    } else {
+                        resultsList.append('<li class="list-group-item text-muted">No results found</li>');
+                        resultsList.show();
+                        hiddenInput.val('');
+                    }
+                }
+            });
+        });
+
+        // Hide results when clicking outside
+        $(document).on('click', function (e) {
+            if (!$(e.target).closest('.autocomplete-container').length) {
+                resultsList.hide();
+            }
+        });
+    });
+</script>

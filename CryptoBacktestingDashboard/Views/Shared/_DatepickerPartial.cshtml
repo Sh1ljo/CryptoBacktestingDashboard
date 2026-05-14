@@ -1,0 +1,72 @@
+@model DateTime?
+@{
+    var propertyName = ViewData.TemplateInfo.HtmlFieldPrefix;
+    var controlId = propertyName.Replace(".", "_");
+    var isHrCulture = System.Globalization.CultureInfo.CurrentUICulture.Name.StartsWith("hr");
+    var dateFormat = isHrCulture ? "d.m.Y" : "Y-m-d"; // flatpickr config
+    var displayFormat = isHrCulture ? "dd.MM.yyyy" : "yyyy-MM-dd";
+}
+
+<!-- Custom Datepicker Container -->
+<div class="form-group position-relative">
+    <label class="control-label">@(ViewData["Label"] ?? propertyName)</label>
+    
+    <div class="input-group">
+        <input type="text" 
+               id="@(controlId)_display" 
+               class="form-control datepicker-display" 
+               placeholder="Select Date" 
+               value="@(Model?.ToString(displayFormat))" 
+               autocomplete="off" />
+               
+        <!-- Real bounding input for form submit -->
+        <input type="hidden" 
+               id="@controlId"
+               name="@propertyName" 
+               class="datepicker-hidden"
+               value="@(Model?.ToString("yyyy-MM-ddTHH:mm:sc"))" />
+    </div>
+    
+    <span class="text-danger field-validation-valid" data-valmsg-for="@propertyName" data-valmsg-replace="true"></span>
+</div>
+
+<!-- Assuming inclusion of a JS date library like Flatpickr in Layout, or writing simple JS -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // We will mock a basic flatpickr or custom JS logic since flatpickr might not be imported.
+        // For Lab 4, if no external lib is used, we have to code it.
+        // We will just load flatpickr dynamically if missing.
+        if (typeof flatpickr === 'undefined') {
+            var script = document.createElement('script');
+            script.src = "https://cdn.jsdelivr.net/npm/flatpickr";
+            script.onload = initDatepicker;
+            document.head.appendChild(script);
+
+            var link = document.createElement('link');
+            link.rel = "stylesheet";
+            link.href = "https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css";
+            document.head.appendChild(link);
+        } else {
+            initDatepicker();
+        }
+
+        function initDatepicker() {
+            flatpickr("#@(controlId)_display", {
+                dateFormat: "@dateFormat",
+                defaultDate: "@(Model?.ToString("yyyy-MM-dd"))",
+                onChange: function(selectedDates, dateStr, instance) {
+                    // Always set backend hidden input to ISO format
+                    if (selectedDates.length > 0) {
+                        // Offset tz block
+                        var d = selectedDates[0];
+                        d = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
+                        document.getElementById("@controlId").value = d.toISOString().split('T')[0];
+                    } else {
+                        document.getElementById("@controlId").value = '';
+                    }
+                    $('#@controlId').trigger('change').trigger('blur'); // validation trigger
+                }
+            });
+        }
+    });
+</script>

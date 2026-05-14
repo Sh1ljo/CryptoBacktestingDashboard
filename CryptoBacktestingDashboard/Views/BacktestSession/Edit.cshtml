@@ -1,0 +1,83 @@
+@model CryptoBacktestingDashboard.Models.Crypto.BacktestSession
+
+@{
+    ViewData["Title"] = "Edit Backtest Session";
+}
+
+<div class="hero" style="margin-bottom: 2rem;">
+    <h1 style="margin-bottom: 0.5rem;">Edit Backtest Session</h1>
+    <p class="hero-subtitle" style="margin: 0; color: var(--rui-cool-gray);">Update simulation variables</p>
+</div>
+
+<div class="card" style="max-width: 800px; padding: 2.5rem; border-radius: 16px; border: 1px solid var(--rui-surface-light); box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+        
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="ExecutedAt" />
+
+        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
+            
+            <div class="form-group" style="display: flex; flex-direction: column;">
+                <label asp-for="StrategyId" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Strategy ID</label>
+                <input asp-for="StrategyId" class="form-control" style="padding: 0.75rem 1rem; border-radius: 8px;" />
+                <span asp-validation-for="StrategyId" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+            </div>
+
+            <!-- Autocomplete Dropdown is styled inside its partial -->
+            <div style="display: flex; flex-direction: column;">
+                <partial name="_AutocompleteDropdownPartial" model='new CryptoBacktestingDashboard.Models.AutocompleteViewModel {
+                    PropertyName = "CryptoPairId",
+                    DisplayName = "Crypto Pair",
+                    SearchUrl = Url.Action("Search", "CryptoPair"),
+                    InitialText = Model.CryptoPair?.Symbol ?? Model.CryptoPairId.ToString(),
+                    InitialValue = Model.CryptoPairId
+                }' />
+            </div>
+        </div>
+
+        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
+            <div style="display: flex; flex-direction: column;">
+                @{ ViewData["Label"] = "Start Date"; }
+                <partial name="_DatepickerPartial" for="StartDate" />
+            </div>
+
+            <div style="display: flex; flex-direction: column;">
+                @{ ViewData["Label"] = "End Date"; }
+                <partial name="_DatepickerPartial" for="EndDate" />
+            </div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--rui-surface-light); margin: 2rem 0;" />
+
+        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
+            <div class="form-group" style="display: flex; flex-direction: column;">
+                <label asp-for="InitialBalance" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Initial Balance ($)</label>
+                <input asp-for="InitialBalance" class="form-control" type="number" step="0.01" style="padding: 0.75rem 1rem; border-radius: 8px;" />
+                <span asp-validation-for="InitialBalance" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+            </div>
+
+            <div class="form-group" style="display: flex; flex-direction: column;">
+                <label asp-for="FinalBalance" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Final Balance ($)</label>
+                <input asp-for="FinalBalance" class="form-control" type="number" step="0.01" style="padding: 0.75rem 1rem; border-radius: 8px;" />
+                <span asp-validation-for="FinalBalance" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 2.5rem; background: var(--rui-surface-light); padding: 1rem 1.5rem; border-radius: 8px;">
+            <div class="form-check" style="display: flex; align-items: center; gap: 0.75rem;">
+                <input asp-for="IsOptimized" class="form-check-input" style="width: 1.25rem; height: 1.25rem; accent-color: var(--rui-blue);" />
+                <label asp-for="IsOptimized" class="form-check-label" style="font-weight: 500; color: var(--rui-dark); cursor: pointer;">Enable algorithmic optimizations on this run</label>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600;">Update Session</button>
+            <a asp-action="Index" class="btn btn-outline" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600; text-align: center; color: var(--rui-mid-slate); border-color: var(--rui-gray-tone);">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

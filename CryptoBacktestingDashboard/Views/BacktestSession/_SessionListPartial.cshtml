@@ -1,0 +1,78 @@
+@model List<CryptoBacktestingDashboard.Models.Crypto.BacktestSession>
+
+@if (Model != null && Model.Count > 0)
+{
+    <div class="grid grid-3" id="session-list-container">
+        @foreach (var session in Model)
+        {
+            var profit = session.GetProfit();
+            var roi = session.GetROI();
+            var profitColor = profit >= 0 ? "var(--rui-success)" : "var(--rui-danger)";
+            var winRate = session.Results.Count > 0 
+                ? (session.Results.Count(r => r.IsWinningTrade) * 100 / session.Results.Count) 
+                : 0;
+
+            <div class="card session-card" id="session-card-@session.Id" style="cursor: pointer; position: relative; display: flex; flex-direction: column;" onclick="window.location.href='@Url.Action("Details", "BacktestSession", new { id = session.Id })'">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                    <div>
+                        <h5 class="card-title" style="margin-bottom: 0.25rem;">@session.Strategy?.Name</h5>
+                        <p class="card-subtitle" style="font-weight: 500;">@session.CryptoPair?.Symbol</p>
+                    </div>
+                    <div>
+                        <span class="badge @(session.IsOptimized ? "badge-success" : "badge-info")">
+                            @(session.IsOptimized ? "Optimized" : "Standard")
+                        </span>
+                    </div>
+                </div>
+
+                <div style="border-bottom: 1px solid var(--rui-gray-tone); padding-bottom: 1rem; margin-bottom: 1rem;">
+                    <p style="font-size: 0.75rem; color: var(--rui-cool-gray); margin-bottom: 0.25rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">
+                        @session.StartDate.ToString("MMM dd, yyyy") &mdash; @session.EndDate.ToString("MMM dd, yyyy")
+                    </p>
+                    <p style="font-size: 0.875rem; color: var(--rui-mid-slate);">
+                        Duration: @((session.EndDate - session.StartDate).Days) days
+                    </p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="metric">
+                        <div class="metric-value" style="color: @profitColor; font-size: 1.25rem;">
+                            $@Math.Abs(profit).ToString("F2")
+                        </div>
+                        <div class="metric-label" style="font-size: 0.75rem;">Profit/Loss</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" style="color: @profitColor; font-size: 1.25rem;">
+                            @roi.ToString("F1")%
+                        </div>
+                        <div class="metric-label" style="font-size: 0.75rem;">ROI</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; flex-grow: 1;">
+                    <div class="metric">
+                        <div class="metric-value" style="font-size: 1.25rem; color: var(--rui-dark);">@session.Results.Count</div>
+                        <div class="metric-label" style="font-size: 0.75rem;">Total Trades</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" style="font-size: 1.25rem; color: var(--rui-dark);">@winRate.ToString("F0")%</div>
+                        <div class="metric-label" style="font-size: 0.75rem;">Win Rate</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--rui-surface-light);">
+                    <a asp-action="Edit" asp-route-id="@session.Id" class="btn btn-outline" style="flex: 1; text-align: center; font-size: 0.875rem; padding: 0.5rem;" onclick="event.stopPropagation();">Edit</a>
+                    <button class="btn btn-outline" style="flex: 1; border-color: var(--rui-danger); color: var(--rui-danger); font-size: 0.875rem; padding: 0.5rem;" onclick="event.stopPropagation(); deleteSession(@session.Id);">Delete</button>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="card" style="text-align: center; padding: 4rem 2rem; background: var(--rui-surface-light); border: none; box-shadow: none;">
+        <p style="color: var(--rui-cool-gray); font-size: 1.125rem; font-weight: 500;">No sessions match your criteria.</p>
+        <p style="color: var(--rui-cool-gray); font-size: 0.875rem; margin-top: 0.5rem;">Create a new session to run your first simulation.</p>
+    </div>
+}
+

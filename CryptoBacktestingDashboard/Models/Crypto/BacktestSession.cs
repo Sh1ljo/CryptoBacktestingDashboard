@@ -9,15 +9,30 @@ namespace CryptoBacktestingDashboard.Models.Crypto
     {
         [Key]
         public int Id { get; set; }
+        [Required(ErrorMessage = "Strategy is required")]
         [ForeignKey("Strategy")]
         public int StrategyId { get; set; }
+
+        [Required(ErrorMessage = "Crypto pair is required")]
         [ForeignKey("CryptoPair")]
         public int CryptoPairId { get; set; }
+
+        [Required(ErrorMessage = "Start date is required")]
         public DateTime StartDate { get; set; }
+
+        [Required(ErrorMessage = "End date is required")]
         public DateTime EndDate { get; set; }
+
         public DateTime ExecutedAt { get; set; }
+
+        [Required(ErrorMessage = "Initial balance is required")]
+        [Range(1, double.MaxValue, ErrorMessage = "Initial balance must be strictly positive.")]
         public decimal InitialBalance { get; set; }
+
+        [Required(ErrorMessage = "Final balance is required")]
+        [Range(0, double.MaxValue, ErrorMessage = "Final balance cannot be negative.")]
         public decimal FinalBalance { get; set; }
+
         public bool IsOptimized { get; set; }
 
         // Foreign keys

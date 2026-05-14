@@ -6,81 +6,93 @@
 
 <section>
     <div class="hero">
-        <h1>Backtest Sessions</h1>
-        <p class="hero-subtitle">View and analyze all your backtesting runs across different strategies and crypto pairs</p>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+            <div>
+                <h1 style="margin-bottom: 0.5rem;">Backtest Sessions</h1>
+                <p class="hero-subtitle" style="margin: 0; max-width: 600px;">Manage and analyze your backtesting performance across different strategies and market conditions.</p>
+            </div>
+            <div>
+                <a asp-action="Create" class="btn btn-primary" style="padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
+                    + New Session
+                </a>
+            </div>
+        </div>
     </div>
 
-    @if (Model != null && Model.Count > 0)
-    {
-        <div class="grid grid-2">
-            @foreach (var session in Model)
-            {
-                var profit = session.GetProfit();
-                var roi = session.GetROI();
-                var profitColor = profit >= 0 ? "var(--rui-success)" : "var(--rui-danger)";
-                var winRate = session.Results.Count > 0 
-                    ? (session.Results.Count(r => r.IsWinningTrade) * 100 / session.Results.Count) 
-                    : 0;
+    <!-- AntiForgeryToken for AJAX delete POST -->
+    @Html.AntiForgeryToken()
 
-                <div class="card" style="cursor: pointer;" onclick="window.location.href='@Url.Action("Details", "BacktestSession", new { id = session.Id })'">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
-                        <div>
-                            <h5 class="card-title">@session.Strategy?.Name</h5>
-                            <p class="card-subtitle">@session.CryptoPair?.Symbol</p>
-                        </div>
-                        <span class="badge @(session.IsOptimized ? "badge-success" : "badge-info")">
-                            @(session.IsOptimized ? "Optimized" : "Standard")
-                        </span>
-                    </div>
+    <div style="margin-bottom: 2rem; position: relative;">
+        <!-- Clean Search Icon inside Input theoretically -->
+        <input type="text" id="searchBox" class="form-control" placeholder="Search by strategy or pair symbol (e.g. BTC)..." style="width: 100%; max-width: 100%; padding: 1rem 1.5rem; font-size: 1rem; border-radius: 12px; border: 1px solid var(--rui-gray-tone); background: var(--rui-white); box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" />
+    </div>
 
-                    <div style="border-bottom: 1px solid #c9c9cd; padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
-                        <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.5rem; text-transform: uppercase;">
-                            @session.StartDate.ToString("MMM dd, yyyy") - @session.EndDate.ToString("MMM dd, yyyy")
-                        </p>
-                        <p style="font-size: 14px; color: #505a63;">
-                            Duration: @((session.EndDate - session.StartDate).Days) days
-                        </p>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
-                        <div class="metric">
-                            <div class="metric-value" style="color: @profitColor;">
-                                $@Math.Abs(profit).ToString("F2")
-                            </div>
-                            <div class="metric-label">Profit/Loss</div>
-                        </div>
-                        <div class="metric">
-                            <div class="metric-value" style="color: @profitColor;">
-                                @roi.ToString("F1")%
-                            </div>
-                            <div class="metric-label">ROI</div>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div class="metric">
-                            <div class="metric-value">@session.Results.Count</div>
-                            <div class="metric-label">Total Trades</div>
-                        </div>
-                        <div class="metric">
-                            <div class="metric-value">@winRate.ToString("F0")%</div>
-                            <div class="metric-label">Win Rate</div>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #c9c9cd;">
-                        <a asp-action="Details" asp-route-id="@session.Id" class="btn btn-primary" style="width: 100%; text-align: center;">
-                            View Details
-                        </a>
-                    </div>
-                </div>
-            }
-        </div>
-    }
-    else
-    {
-        <div class="card" style="text-align: center; padding: 3rem;">
-            <p style="color: #8d969e; font-size: 18px;">No backtest sessions yet. Create your first strategy and run a backtest!</p>
-        </div>
-    }
+    <div id="sessionListContainer">
+        <partial name="_SessionListPartial" model="Model" />
+    </div>
 </section>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Search Input Focus glow
+            $('#searchBox').on('focus', function() {
+                $(this).css('border-color', 'var(--rui-blue)');
+                $(this).css('box-shadow', '0 0 0 3px rgba(73, 79, 223, 0.1)');
+            }).on('blur', function() {
+                $(this).css('border-color', 'var(--rui-gray-tone)');
+                $(this).css('box-shadow', '0 2px 4px rgba(0,0,0,0.02)');
+            });
+
+            // AJAX Search
+            var searchTimeout;
+            $('#searchBox').on('input', function () {
+                var query = $(this).val();
+                clearTimeout(searchTimeout);
+                
+                // Add debounce to not spam backend
+                searchTimeout = setTimeout(function() {
+                    $.ajax({
+                        url: '@Url.Action("Index", "BacktestSession")',
+                        type: 'GET',
+                        data: { q: query },
+                        success: function (data) {
+                            $('#sessionListContainer').css('opacity', '0.5');
+                            setTimeout(function() {
+                                $('#sessionListContainer').html(data).css('opacity', '1');
+                            }, 150);
+                        }
+                    });
+                }, 300);
+            });
+        });
+
+        // AJAX Soft Delete + Animation
+        function deleteSession(id) {
+            if (confirm('Are you sure you want to delete this session?')) {
+                $.ajax({
+                    url: '@Url.Action("Delete", "BacktestSession")' + '/' + id,
+                    type: 'POST',
+                    headers: {
+                        "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function () {
+                        // Smooth fade and slide up animation
+                        $('#session-card-' + id).animate({
+                            opacity: 0,
+                            height: 0,
+                            margin: 0,
+                            padding: 0
+                        }, 400, function() {
+                            $(this).remove();
+                        });
+                    },
+                    error: function () {
+                        alert('Error deleting session. Please try again.');
+                    }
+                });
+            }
+        }
+    </script>
+}
+

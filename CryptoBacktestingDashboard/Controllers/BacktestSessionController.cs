@@ -16,9 +16,24 @@ namespace CryptoBacktestingDashboard.Controllers
         }
 
         [HttpGet("")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? q = null)
         {
             var sessions = await _sessionRepository.GetItemsAsync();
+
+            if (!string.IsNullOrEmpty(q))
+            {
+                sessions = sessions.Where(s =>
+                    (s.CryptoPair?.Symbol?.Contains(q, System.StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (s.Strategy?.Name?.Contains(q, System.StringComparison.OrdinalIgnoreCase) ?? false)
+                ).ToList();
+            }
+
+            // AJAX request check
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return PartialView("_SessionListPartial", sessions);
+            }
+
             return View(sessions);
         }
 
@@ -30,6 +45,68 @@ namespace CryptoBacktestingDashboard.Controllers
                 return NotFound();
 
             return View(session);
+        }
+
+        [HttpGet("create")]
+        public IActionResult Create()
+        {
+            return View(new BacktestSession { StartDate = System.DateTime.Today, EndDate = System.DateTime.Today.AddDays(30) });
+        }
+
+        [HttpPost("create")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(BacktestSession model)
+        {
+            if (ModelState.IsValid)
+            {
+                await _sessionRepository.InsertItemAsync(model);
+                return RedirectToAction(nameof(Index));
+            }
+            return View(model);
+        }
+
+        [HttpGet("edit/{id}")]
+        [ActionName("Edit")]
+        public async Task<IActionResult> EditGet(int id)
+        {
+            var session = await _sessionRepository.GetItemAsync(id);
+            if (session == null)
+                return NotFound();
+            return View(session);
+        }
+
+        [HttpPost("edit/{id}")]
+        [ActionName("Edit")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditPost(int id)
+        {
+            var session = await _sessionRepository.GetItemAsync(id);
+            if (session == null)
+                return NotFound();
+
+            var ok = await TryUpdateModelAsync(session);
+
+            if (ok && ModelState.IsValid)
+            {
+                await _sessionRepository.UpdateItemAsync(session);
+                return RedirectToAction(nameof(Index));
+            }
+
+            return View(session);
+        }
+
+        [HttpPost("delete/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            await _sessionRepository.DeleteItemAsync(id);
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Ok();
+            }
+
+            return RedirectToAction(nameof(Index));
         }
     }
 }
