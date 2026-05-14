@@ -16,11 +16,16 @@
         <input type="hidden" asp-for="ExecutedAt" />
 
         <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
-            
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="StrategyId" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Strategy ID</label>
-                <input asp-for="StrategyId" class="form-control" style="padding: 0.75rem 1rem; border-radius: 8px;" />
-                <span asp-validation-for="StrategyId" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+
+            <!-- Autocomplete Dropdown for Strategy -->
+            <div style="display: flex; flex-direction: column;">
+                <partial name="_AutocompleteDropdownPartial" model='new CryptoBacktestingDashboard.Models.AutocompleteViewModel {
+                    PropertyName = "StrategyId",
+                    DisplayName = "Strategy",
+                    SearchUrl = Url.Action("Search", "BacktestStrategy"),
+                    InitialText = Model.Strategy?.Name ?? Model.StrategyId.ToString(),
+                    InitialValue = Model.StrategyId
+                }' />
             </div>
 
             <!-- Autocomplete Dropdown is styled inside its partial -->

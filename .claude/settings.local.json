@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build *)",
+      "Bash(curl *)",
+      "Bash(curl -s -c /tmp/cookies.txt http://localhost:5080/backtests/create)",
+      "Read(//tmp/**)",
+      "Bash(Get-ChildItem C:\\\\Projects\\\\CryptoBacktestingDashboard\\\\ *)"
+    ]
+  }
+}

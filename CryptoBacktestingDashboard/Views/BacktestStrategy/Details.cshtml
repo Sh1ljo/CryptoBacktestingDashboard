@@ -23,6 +23,16 @@
 </section>
 
 <section>
+    <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit Strategy</a>
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outlined" style="color: #dc3545;" onclick="return confirm('Are you sure you want to delete this strategy?')">Delete</button>
+        </form>
+    </div>
+</section>
+
+<section>
     <h3>Configuration</h3>
     <div class="grid grid-2">
         <div class="card">

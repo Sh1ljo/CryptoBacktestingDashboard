@@ -1,0 +1,83 @@
+@model CryptoBacktestingDashboard.Models.Crypto.BacktestStrategy
+
+@{
+    ViewData["Title"] = "Edit Strategy";
+}
+
+<div class="hero" style="margin-bottom: 2rem;">
+    <h1 style="margin-bottom: 0.5rem;">Edit Trading Strategy</h1>
+    <p class="hero-subtitle" style="margin: 0; color: var(--rui-cool-gray);">Update your strategy configuration</p>
+</div>
+
+<div class="card" style="max-width: 800px; padding: 2.5rem; border-radius: 16px; border: 1px solid var(--rui-surface-light); box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="CreatedAt" />
+
+        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
+            <div class="form-group" style="display: flex; flex-direction: column;">
+                <label asp-for="Name" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Strategy Name</label>
+                <input asp-for="Name" class="form-control" placeholder="e.g., Moving Average Crossover" style="padding: 0.75rem 1rem; border-radius: 8px;" />
+                <span asp-validation-for="Name" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+            </div>
+
+            <div class="form-group" style="display: flex; flex-direction: column;">
+                <label asp-for="IsActive" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Status</label>
+                <select asp-for="IsActive" class="form-control" style="padding: 0.75rem 1rem; border-radius: 8px;">
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                </select>
+                <span asp-validation-for="IsActive" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 2rem;">
+            <label asp-for="Description" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Description</label>
+            <textarea asp-for="Description" class="form-control" rows="3" placeholder="Describe your trading strategy..." style="padding: 0.75rem 1rem; border-radius: 8px;"></textarea>
+            <span asp-validation-for="Description" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+        </div>
+
+        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
+            <div class="form-group" style="display: flex; flex-direction: column;">
+                <label asp-for="InitialCapital" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Initial Capital ($)</label>
+                <input asp-for="InitialCapital" class="form-control" type="number" step="0.01" min="0" style="padding: 0.75rem 1rem; border-radius: 8px;" />
+                <span asp-validation-for="InitialCapital" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+            </div>
+
+            <div class="form-group" style="display: flex; flex-direction: column;">
+                <label asp-for="LookbackPeriod" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Lookback Period (candles)</label>
+                <input asp-for="LookbackPeriod" class="form-control" type="number" min="1" style="padding: 0.75rem 1rem; border-radius: 8px;" />
+                <span asp-validation-for="LookbackPeriod" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+            </div>
+        </div>
+
+        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
+            <div class="form-group" style="display: flex; flex-direction: column;">
+                <label asp-for="RiskManagementId" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Risk Management</label>
+                <select asp-for="RiskManagementId" asp-items="ViewBag.RiskManagementId" class="form-control" style="padding: 0.75rem 1rem; border-radius: 8px;">
+                    <option value="">-- Select Risk Management --</option>
+                </select>
+                <span asp-validation-for="RiskManagementId" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+            </div>
+
+            <div class="form-group" style="display: flex; flex-direction: column;">
+                <label class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Technical Indicators</label>
+                <select name="IndicatorIds" asp-items="ViewBag.IndicatorIds" multiple class="form-control" style="padding: 0.5rem 1rem; border-radius: 8px; height: 120px;">
+                </select>
+                <small style="color: #8d969e; margin-top: 0.25rem;">Hold Ctrl/Cmd to select multiple</small>
+            </div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--rui-surface-light); margin: 2rem 0;" />
+
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600;">Update Strategy</button>
+            <a asp-action="Index" class="btn btn-outlined" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600; text-align: center;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

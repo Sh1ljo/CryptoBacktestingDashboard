@@ -57,6 +57,11 @@ namespace CryptoBacktestingDashboard.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(BacktestSession model)
         {
+            // The un-bound navigational properties shouldn't prevent session creation
+            ModelState.Remove("Strategy");
+            ModelState.Remove("CryptoPair");
+            ModelState.Remove("Results");
+
             if (ModelState.IsValid)
             {
                 await _sessionRepository.InsertItemAsync(model);
@@ -84,9 +89,16 @@ namespace CryptoBacktestingDashboard.Controllers
             if (session == null)
                 return NotFound();
 
-            var ok = await TryUpdateModelAsync(session);
+            // TryUpdateModelAsync returns false if there are any validation errors
+            // (including navigational properties missing). We will ignore its return 
+            // value since we manually scrub the ModelState before checking IsValid.
+            await TryUpdateModelAsync(session);
 
-            if (ok && ModelState.IsValid)
+            ModelState.Remove("Strategy");
+            ModelState.Remove("CryptoPair");
+            ModelState.Remove("Results");
+
+            if (ModelState.IsValid)
             {
                 await _sessionRepository.UpdateItemAsync(session);
                 return RedirectToAction(nameof(Index));

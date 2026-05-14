@@ -56,7 +56,7 @@ namespace CryptoBacktestingDashboard.Controllers
 
             return Json(results);
         }
-        
+
         [HttpGet("create")]
         public IActionResult Create()
         {
@@ -67,6 +67,9 @@ namespace CryptoBacktestingDashboard.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CryptoPair model)
         {
+            ModelState.Remove("CandleDataHistory");
+            ModelState.Remove("BacktestSessions");
+
             if (ModelState.IsValid)
             {
                 await _pairRepository.InsertItemAsync(model);
@@ -96,6 +99,9 @@ namespace CryptoBacktestingDashboard.Controllers
 
             var ok = await TryUpdateModelAsync(pair);
 
+            ModelState.Remove("CandleDataHistory");
+            ModelState.Remove("BacktestSessions");
+
             if (ok && ModelState.IsValid)
             {
                 await _pairRepository.UpdateItemAsync(pair);
@@ -110,12 +116,12 @@ namespace CryptoBacktestingDashboard.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             await _pairRepository.DeleteItemAsync(id);
-            
+
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
                 return Ok();
             }
-            
+
             return RedirectToAction(nameof(Index));
         }
     }
