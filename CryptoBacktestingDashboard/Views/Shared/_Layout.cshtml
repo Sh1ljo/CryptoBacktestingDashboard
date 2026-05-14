@@ -26,6 +26,18 @@
     </header>
     
     <main>
+        @if (TempData["Success"] != null)
+        {
+            <div style="background: #00a87e; color: white; padding: 12px 24px; border-radius: 12px; margin-bottom: 1rem; font-size: 14px;">
+                @TempData["Success"]
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div style="background: #e23b4a; color: white; padding: 12px 24px; border-radius: 12px; margin-bottom: 1rem; font-size: 14px;">
+                @TempData["Error"]
+            </div>
+        }
         @RenderBody()
     </main>
 

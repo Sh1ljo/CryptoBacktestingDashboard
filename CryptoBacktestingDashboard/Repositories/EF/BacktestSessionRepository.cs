@@ -49,10 +49,18 @@ namespace CryptoBacktestingDashboard.Repositories.EF
 
         public async Task<bool> DeleteItemAsync(int id)
         {
-            var item = await _context.BacktestSessions.FindAsync(id);
+            var item = await _context.BacktestSessions
+                .Include(s => s.Results)
+                .FirstOrDefaultAsync(m => m.Id == id);
             if (item == null)
             {
                 return false;
+            }
+
+            // Delete related results first to avoid FK violation
+            if (item.Results.Count > 0)
+            {
+                _context.BacktestResults.RemoveRange(item.Results);
             }
 
             _context.BacktestSessions.Remove(item);

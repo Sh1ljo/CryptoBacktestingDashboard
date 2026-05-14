@@ -20,9 +20,8 @@ namespace CryptoBacktestingDashboard.Models.Crypto
         [StringLength(10, MinimumLength = 2, ErrorMessage = "Quote asset must be between 2 and 10 characters")]
         public string? QuoteAsset { get; set; } // e.g., USD
 
-        [Required(ErrorMessage = "Current price is required")]
-        [Range(0.00000001, double.MaxValue, ErrorMessage = "Current price must be greater than 0")]
-        public decimal CurrentPrice { get; set; }
+        [Range(0, double.MaxValue, ErrorMessage = "Current price must be a positive value")]
+        public decimal? CurrentPrice { get; set; }
         public DateTime CreatedAt { get; set; }
 
         // 1-N relationship: one pair has many candle data points

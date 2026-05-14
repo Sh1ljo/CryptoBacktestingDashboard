@@ -1,6 +1,7 @@
 ﻿using CryptoBacktestingDashboard.Data;
 using CryptoBacktestingDashboard.Repositories;
 using CryptoBacktestingDashboard.Repositories.EF;
+using CryptoBacktestingDashboard.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,10 @@ builder.Services.AddScoped<CryptoPairRepository>();
 builder.Services.AddScoped<IndicatorRepository>();
 builder.Services.AddScoped<RiskManagementRepository>();
 builder.Services.AddScoped<CandleDataRepository>();
+builder.Services.AddScoped<BacktestResultRepository>();
+
+builder.Services.AddHttpClient<MarketDataService>();
+builder.Services.AddScoped<BacktestService>();
 
 
 var app = builder.Build();

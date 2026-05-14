@@ -1,11 +1,19 @@
 @model List<CryptoPair>
 
+@{
+    var priceChanges = ViewData["PriceChanges"] as Dictionary<int, decimal?>;
+}
+
 @if (Model != null && Model.Count > 0)
 {
     <div class="grid grid-3">
         @foreach (var pair in Model)
         {
-            var priceChangePercent = 2.5m;
+            decimal priceChangePercent = 0;
+            if (priceChanges != null && priceChanges.ContainsKey(pair.Id))
+            {
+                priceChangePercent = priceChanges[pair.Id] ?? 0;
+            }
 
             <div class="card" style="cursor: pointer;" onclick="window.location.href='@Url.Action("Details", "CryptoPair", new { id = pair.Id })'">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
@@ -23,9 +31,9 @@
                         Current Price
                     </p>
                     <p style="font-size: 28px; color: #191c1f; font-weight: 600; margin: 0;">
-                        $@pair.CurrentPrice.ToString("F2")
+                        $@(pair.CurrentPrice?.ToString("F2") ?? "0.00")
                     </p>
-                    <p style="font-size: 12px; color: #00a87e; margin: 0.5rem 0 0 0;">
+                    <p style="font-size: 12px; color: @(priceChangePercent > 0 ? "#00a87e" : "#e23b4a"); margin: 0.5rem 0 0 0;">
                         ↑ @priceChangePercent.ToString("+0.0;-0.0;0")%
                     </p>
                 </div>

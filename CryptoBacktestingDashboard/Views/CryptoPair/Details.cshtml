@@ -27,9 +27,14 @@
             <h6>Current Price</h6>
             <div style="display: flex; align-items: baseline; gap: 1rem;">
                 <div class="metric-value" style="font-size: 48px; margin: 0;">
-                    $@Model.CurrentPrice.ToString("F2")
+                    $@(Model.CurrentPrice?.ToString("F2") ?? "0.00")
                 </div>
-                <span style="color: #00a87e; font-size: 14px; font-weight: 600;">↑ +2.50%</span>
+                @{
+                    var priceChange = ViewData["PriceChangePercentage"] as decimal?;
+                    var priceChangeString = priceChange.HasValue ? $"{priceChange.Value:F2}%" : "0.00%";
+                    var priceChangeColor = priceChange.HasValue && priceChange > 0 ? "#00a87e" : "#e23b4a";
+                }
+                <span style="color: @priceChangeColor; font-size: 14px; font-weight: 600;">↑ @priceChangeString</span>
             </div>
         </div>
 
@@ -49,7 +54,24 @@
 </section>
 
 <section>
-    <h3>Candle Data History</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin: 0;">Candle Data History</h3>
+        <form asp-action="FetchData" asp-route-id="@Model.Id" method="post" style="display: inline;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-primary" style="font-size: 12px; padding: 8px 16px;">
+                Fetch 1 Year of Data
+            </button>
+        </form>
+        @if (Model.CandleDataHistory != null && Model.CandleDataHistory.Count > 0)
+        {
+            <form asp-action="ClearData" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outlined" style="font-size: 12px; padding: 8px 16px; color: #e23b4a; border-color: #e23b4a;" onclick="return confirm('Clear all candle data for this pair?')">
+                    Clear Data
+                </button>
+            </form>
+        }
+    </div>
     @if (Model.CandleDataHistory != null && Model.CandleDataHistory.Count > 0)
     {
         <table>
@@ -67,7 +89,7 @@
                 @foreach (var candle in Model.CandleDataHistory.OrderByDescending(c => c.OpenTime).Take(20))
                 {
                     <tr>
-                        <td>@candle.OpenTime.ToString("MMM dd, HH:mm")</td>
+                        <td>@candle.OpenTime.ToString("MMM dd, yyyy")</td>
                         <td>$@candle.Open.ToString("F2")</td>
                         <td>$@candle.High.ToString("F2")</td>
                         <td>$@candle.Low.ToString("F2")</td>
@@ -78,13 +100,13 @@
             </tbody>
         </table>
         <p style="color: #8d969e; font-size: 12px; text-align: center;">
-            Showing latest 20 candles • Total: @Model.CandleDataHistory.Count
+            Showing latest 20 of @Model.CandleDataHistory.Count candles
         </p>
     }
     else
     {
         <div class="card" style="padding: 2rem; text-align: center;">
-            <p style="color: #8d969e; margin: 0;">No candle data available yet.</p>
+            <p style="color: #8d969e; margin-bottom: 1rem;">No candle data available. Click "Fetch 1 Year of Data" to load historical prices from Binance.</p>
         </div>
     }
 </section>

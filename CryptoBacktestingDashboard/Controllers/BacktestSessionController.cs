@@ -1,5 +1,6 @@
 using CryptoBacktestingDashboard.Models.Crypto;
 using CryptoBacktestingDashboard.Repositories.EF;
+using CryptoBacktestingDashboard.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
@@ -9,10 +10,17 @@ namespace CryptoBacktestingDashboard.Controllers
     public class BacktestSessionController : Controller
     {
         private readonly BacktestSessionRepository _sessionRepository;
+        private readonly BacktestStrategyRepository _strategyRepository;
+        private readonly BacktestService _backtestService;
 
-        public BacktestSessionController(BacktestSessionRepository sessionRepository)
+        public BacktestSessionController(
+            BacktestSessionRepository sessionRepository,
+            BacktestStrategyRepository strategyRepository,
+            BacktestService backtestService)
         {
             _sessionRepository = sessionRepository;
+            _strategyRepository = strategyRepository;
+            _backtestService = backtestService;
         }
 
         [HttpGet("")]
@@ -105,6 +113,34 @@ namespace CryptoBacktestingDashboard.Controllers
             }
 
             return View(session);
+        }
+
+        [HttpPost("{id}/run")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Run(int id)
+        {
+            var session = await _sessionRepository.GetItemAsync(id);
+            if (session == null)
+                return NotFound();
+
+            // Load the full strategy with indicators and risk management
+            var strategy = await _strategyRepository.GetItemAsync(session.StrategyId);
+            if (strategy == null)
+                return BadRequest("Strategy not found.");
+
+            session.Strategy = strategy;
+
+            try
+            {
+                await _backtestService.RunBacktestAsync(session);
+                TempData["SuccessMessage"] = "Backtest completed successfully.";
+            }
+            catch (InvalidOperationException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost("delete/{id}")]

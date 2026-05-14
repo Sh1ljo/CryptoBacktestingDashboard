@@ -22,15 +22,36 @@
     <span>@Model.Strategy?.Name @Model.CryptoPair?.Symbol</span>
 </nav>
 
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success" style="padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        @TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger" style="padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
 <section>
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
         <div>
             <h2>@Model.Strategy?.Name</h2>
             <p style="font-size: 20px; color: #505a63; margin-bottom: 1rem;">@Model.CryptoPair?.Symbol</p>
         </div>
-        <span class="badge @(Model.IsOptimized ? "badge-success" : "badge-warning")">
-            @(Model.IsOptimized ? "✓ Optimized" : "⚙ Standard")
-        </span>
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <form asp-action="Run" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
+                    ▶ Run Backtest
+                </button>
+            </form>
+            <span class="badge @(Model.IsOptimized ? "badge-success" : "badge-warning")">
+                @(Model.IsOptimized ? "✓ Optimized" : "⚙ Standard")
+            </span>
+        </div>
     </div>
 </section>
 

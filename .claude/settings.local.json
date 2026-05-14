@@ -5,7 +5,20 @@
       "Bash(curl *)",
       "Bash(curl -s -c /tmp/cookies.txt http://localhost:5080/backtests/create)",
       "Read(//tmp/**)",
-      "Bash(Get-ChildItem C:\\\\Projects\\\\CryptoBacktestingDashboard\\\\ *)"
+      "Bash(Get-ChildItem C:\\\\Projects\\\\CryptoBacktestingDashboard\\\\ *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Projects\\\\CryptoBacktestingDashboard\" -Recurse)",
+      "Bash(Select-Object FullName)",
+      "PowerShell(head *)",
+      "Bash(Select-String -Pattern \"error\")",
+      "PowerShell(dotnet build *)",
+      "PowerShell(Stop-Process *)",
+      "Bash(dotnet ef *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Projects\\\\CryptoBacktestingDashboard\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(dir /b /s C:\\\\Projects\\\\CryptoBacktestingDashboard\\\\*.cs)",
+      "Bash(Select-String \"error|Build\")",
+      "Bash(taskkill /f /im dotnet.exe)",
+      "Bash(taskkill /f /im CryptoBacktestingDashboard.exe)"
     ]
   }
 }
