@@ -6,16 +6,59 @@
 
 <div class="hero" style="margin-bottom: 2rem;">
     <h1 style="margin-bottom: 0.5rem;">Create Trading Strategy</h1>
-    <p class="hero-subtitle" style="margin: 0; color: var(--rui-cool-gray);">Define your trading strategy with indicators and risk management</p>
+    <p class="hero-subtitle" style="margin: 0; color: var(--rui-cool-gray);">Choose a preset template or build your own with custom indicators</p>
 </div>
 
-<div class="card" style="max-width: 800px; padding: 2.5rem; border-radius: 16px; border: 1px solid var(--rui-surface-light); box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-    <form asp-action="Create" method="post">
+<!-- Preset Templates Section -->
+<section style="margin-bottom: 3rem;">
+    <h3 style="font-weight: 600; margin-bottom: 1.5rem; color: var(--rui-dark);">Quick Start Templates</h3>
+    <div class="grid grid-2" style="gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="card template-card" onclick="applyTemplate('ma-crossover')" style="cursor: pointer; padding: 1.5rem; border: 2px solid var(--rui-surface-light); transition: all 0.2s;">
+            <h5 style="margin: 0 0 0.5rem 0; color: var(--rui-dark);">📈 MA Crossover</h5>
+            <p style="margin: 0.5rem 0; font-size: 0.875rem; color: #505a63;">Simple moving average crossover strategy</p>
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--rui-surface-light);">
+                <small style="color: #8d969e;">Uses: SMA (short & long)</small>
+            </div>
+        </div>
 
+        <div class="card template-card" onclick="applyTemplate('rsi-levels')" style="cursor: pointer; padding: 1.5rem; border: 2px solid var(--rui-surface-light); transition: all 0.2s;">
+            <h5 style="margin: 0 0 0.5rem 0; color: var(--rui-dark);">⚡ RSI Oversold/Overbought</h5>
+            <p style="margin: 0.5rem 0; font-size: 0.875rem; color: #505a63;">Buy oversold, sell overbought signals</p>
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--rui-surface-light);">
+                <small style="color: #8d969e;">Uses: RSI</small>
+            </div>
+        </div>
+
+        <div class="card template-card" onclick="applyTemplate('macd-momentum')" style="cursor: pointer; padding: 1.5rem; border: 2px solid var(--rui-surface-light); transition: all 0.2s;">
+            <h5 style="margin: 0 0 0.5rem 0; color: var(--rui-dark);">🚀 MACD Momentum</h5>
+            <p style="margin: 0.5rem 0; font-size: 0.875rem; color: #505a63;">Trend following with MACD crossovers</p>
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--rui-surface-light);">
+                <small style="color: #8d969e;">Uses: MACD</small>
+            </div>
+        </div>
+
+        <div class="card template-card" onclick="applyTemplate('bollinger-bands')" style="cursor: pointer; padding: 1.5rem; border: 2px solid var(--rui-surface-light); transition: all 0.2s;">
+            <h5 style="margin: 0 0 0.5rem 0; color: var(--rui-dark);">🎯 Bollinger Bands</h5>
+            <p style="margin: 0.5rem 0; font-size: 0.875rem; color: #505a63;">Mean reversion using band touches</p>
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--rui-surface-light);">
+                <small style="color: #8d969e;">Uses: Bollinger Bands</small>
+            </div>
+        </div>
+    </div>
+    <div style="padding: 1rem; background: #f6f8fa; border-radius: 8px; border-left: 4px solid var(--rui-blue);">
+        <p style="margin: 0; font-size: 0.875rem; color: #505a63;">💡 Click any template to load it, or scroll down to create a custom strategy</p>
+    </div>
+</section>
+
+<form asp-action="Create" method="post">
+    <div class="card" style="max-width: 100%; padding: 2.5rem; border-radius: 16px; border: 1px solid var(--rui-surface-light); box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+
+        <!-- Basic Info -->
+        <h3 style="margin-top: 0; margin-bottom: 2rem; color: var(--rui-dark);">Strategy Details</h3>
         <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
             <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="Name" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Strategy Name</label>
-                <input asp-for="Name" class="form-control" placeholder="e.g., Moving Average Crossover" style="padding: 0.75rem 1rem; border-radius: 8px;" />
+                <label asp-for="Name" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Strategy Name *</label>
+                <input asp-for="Name" class="form-control" placeholder="e.g., BTC Daily MA Crossover" style="padding: 0.75rem 1rem; border-radius: 8px;" />
                 <span asp-validation-for="Name" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
             </div>
 
@@ -25,55 +68,136 @@
                     <option value="true">Active</option>
                     <option value="false">Inactive</option>
                 </select>
-                <span asp-validation-for="IsActive" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
             </div>
         </div>
 
         <div class="form-group" style="margin-bottom: 2rem;">
             <label asp-for="Description" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Description</label>
-            <textarea asp-for="Description" class="form-control" rows="3" placeholder="Describe your trading strategy..." style="padding: 0.75rem 1rem; border-radius: 8px;"></textarea>
+            <textarea asp-for="Description" class="form-control" rows="2" placeholder="What's the trading logic? e.g., Buy when fast MA crosses above slow MA..." style="padding: 0.75rem 1rem; border-radius: 8px;"></textarea>
             <span asp-validation-for="Description" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
         </div>
 
+        <hr style="border: none; border-top: 1px solid var(--rui-surface-light); margin: 2rem 0;" />
+
+        <!-- Parameters -->
+        <h3 style="margin-bottom: 1.5rem; color: var(--rui-dark);">Parameters</h3>
         <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
             <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="InitialCapital" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Initial Capital ($)</label>
+                <label asp-for="InitialCapital" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Initial Capital ($) *</label>
                 <input asp-for="InitialCapital" class="form-control" type="number" step="0.01" min="0" value="10000" style="padding: 0.75rem 1rem; border-radius: 8px;" />
                 <span asp-validation-for="InitialCapital" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
             </div>
 
             <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="LookbackPeriod" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Lookback Period (candles)</label>
+                <label asp-for="LookbackPeriod" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Lookback Period (candles) *</label>
                 <input asp-for="LookbackPeriod" class="form-control" type="number" min="1" value="20" style="padding: 0.75rem 1rem; border-radius: 8px;" />
-                <span asp-validation-for="LookbackPeriod" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
-            </div>
-        </div>
-
-        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="RiskManagementId" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Risk Management</label>
-                <select asp-for="RiskManagementId" asp-items="ViewBag.RiskManagementId" class="form-control" style="padding: 0.75rem 1rem; border-radius: 8px;">
-                    <option value="">-- Select Risk Management --</option>
-                </select>
-                <span asp-validation-for="RiskManagementId" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
-            </div>
-
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Technical Indicators</label>
-                <select name="IndicatorIds" asp-items="ViewBag.IndicatorIds" multiple class="form-control" style="padding: 0.5rem 1rem; border-radius: 8px; height: 120px;">
-                </select>
-                <small style="color: #8d969e; margin-top: 0.25rem;">Hold Ctrl/Cmd to select multiple</small>
+                <small style="color: #8d969e; margin-top: 0.25rem;">How many previous candles to consider (e.g., 20 = ~1 month on daily data)</small>
             </div>
         </div>
 
         <hr style="border: none; border-top: 1px solid var(--rui-surface-light); margin: 2rem 0;" />
 
+        <!-- Risk & Indicators -->
+        <h3 style="margin-bottom: 1.5rem; color: var(--rui-dark);">Risk & Indicators</h3>
+        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
+            <div class="form-group" style="display: flex; flex-direction: column;">
+                <label asp-for="RiskManagementId" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Risk Management Rule *</label>
+                <select asp-for="RiskManagementId" asp-items="ViewBag.RiskManagementId" class="form-control" style="padding: 0.75rem 1rem; border-radius: 8px;">
+                    <option value="">-- Select Risk Management --</option>
+                </select>
+                <span asp-validation-for="RiskManagementId" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+                <small style="color: #8d969e; margin-top: 0.5rem;">Defines stop loss, take profit, and position sizing</small>
+            </div>
+
+            <div class="form-group" style="display: flex; flex-direction: column;">
+                <label class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Technical Indicators *</label>
+                <select name="IndicatorIds" asp-items="ViewBag.IndicatorIds" multiple class="form-control" style="padding: 0.5rem 1rem; border-radius: 8px; height: 120px;">
+                </select>
+                <small style="color: #8d969e; margin-top: 0.5rem;">🖱️ Hold Ctrl/Cmd to select multiple. See templates above for recommended combinations.</small>
+            </div>
+        </div>
+
+        <!-- Indicator Descriptions -->
+        <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f6f8fa; border-radius: 8px; border-left: 4px solid var(--rui-blue);">
+            <h5 style="margin-top: 0; margin-bottom: 1rem; color: var(--rui-dark);">📖 Indicator Guide</h5>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.875rem;">
+                <div>
+                    <strong style="color: var(--rui-dark);">SMA (Simple Moving Average)</strong><br/>
+                    <span style="color: #505a63;">Smooths price data over N periods. Used for trend identification.</span>
+                </div>
+                <div>
+                    <strong style="color: var(--rui-dark);">EMA (Exponential MA)</strong><br/>
+                    <span style="color: #505a63;">Faster SMA, gives more weight to recent prices.</span>
+                </div>
+                <div>
+                    <strong style="color: var(--rui-dark);">RSI (Relative Strength Index)</strong><br/>
+                    <span style="color: #505a63;">Measures momentum (0-100). &lt;30 = oversold, &gt;70 = overbought.</span>
+                </div>
+                <div>
+                    <strong style="color: var(--rui-dark);">MACD (Moving Average Convergence)</strong><br/>
+                    <span style="color: #505a63;">Shows momentum & trend. Signals on histogram crossovers.</span>
+                </div>
+                <div>
+                    <strong style="color: var(--rui-dark);">Bollinger Bands</strong><br/>
+                    <span style="color: #505a63;">Upper/lower bands. Price touching bands indicates volatility extremes.</span>
+                </div>
+                <div>
+                    <strong style="color: var(--rui-dark);">Stochastic</strong><br/>
+                    <span style="color: #505a63;">Like RSI but oscillates between 0-100. &lt;20 = oversold, &gt;80 = overbought.</span>
+                </div>
+            </div>
+        </div>
+
         <div style="display: flex; gap: 1rem;">
             <button type="submit" class="btn btn-primary" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600;">Save Strategy</button>
             <a asp-action="Index" class="btn btn-outlined" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600; text-align: center;">Cancel</a>
         </div>
-    </form>
-</div>
+    </div>
+</form>
+
+<style>
+    .template-card:hover {
+        border-color: var(--rui-blue) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        transform: translateY(-2px);
+    }
+</style>
+
+<script>
+    function applyTemplate(templateName) {
+        const templates = {
+            'ma-crossover': {
+                name: 'MA Crossover Strategy',
+                description: 'Buy when fast SMA (12) crosses above slow SMA (26). Sell on reverse crossover.',
+                lookback: 26
+            },
+            'rsi-levels': {
+                name: 'RSI Levels Strategy',
+                description: 'Buy when RSI < 30 (oversold). Sell when RSI > 70 (overbought).',
+                lookback: 14
+            },
+            'macd-momentum': {
+                name: 'MACD Momentum Strategy',
+                description: 'Buy on MACD histogram crossing above zero. Sell on crossing below zero.',
+                lookback: 26
+            },
+            'bollinger-bands': {
+                name: 'Bollinger Bands Strategy',
+                description: 'Buy when price touches lower band. Sell when price touches upper band.',
+                lookback: 20
+            }
+        };
+
+        const template = templates[templateName];
+        if (template) {
+            document.querySelector('[asp-for="Name"]').value = template.name;
+            document.querySelector('[asp-for="Description"]').value = template.description;
+            document.querySelector('[asp-for="LookbackPeriod"]').value = template.lookback;
+            alert(`✓ Template "${template.name}" loaded! Now select the indicators below and risk management rule.`);
+            document.querySelector('.form-control[name="IndicatorIds"]').focus();
+        }
+    }
+</script>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

@@ -18,7 +18,10 @@
       "Bash(dir /b /s C:\\\\Projects\\\\CryptoBacktestingDashboard\\\\*.cs)",
       "Bash(Select-String \"error|Build\")",
       "Bash(taskkill /f /im dotnet.exe)",
-      "Bash(taskkill /f /im CryptoBacktestingDashboard.exe)"
+      "Bash(taskkill /f /im CryptoBacktestingDashboard.exe)",
+      "Bash(dotnet run *)",
+      "Bash(Start-Sleep -Seconds 8)",
+      "Bash(Write-Host \"App should be starting...\")"
     ]
   }
 }

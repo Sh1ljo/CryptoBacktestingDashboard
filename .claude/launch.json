@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "CryptoBacktestingDashboard",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "CryptoBacktestingDashboard/CryptoBacktestingDashboard.csproj"],
+      "port": 5000
+    }
+  ]
+}
