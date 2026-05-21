@@ -3,19 +3,19 @@
     "UserPromptSubmit": [
       {
         "type": "command",
-        "command": "powershell.exe -ExecutionPolicy Bypass -File \"C:\\Users\\gabys\\Desktop\\Programiranje\\CryptoBacktestingDashboard\\.github\\hooks\\log-hook.ps1\""
+        "command": "powershell.exe -ExecutionPolicy Bypass -File \"C:\\Projects\\CryptoBacktestingDashboard\\.github\\hooks\\log-hook.ps1\""
       }
     ],
     "PreToolUse": [
       {
         "type": "command",
-        "command": "powershell.exe -ExecutionPolicy Bypass -File \"C:\\Users\\gabys\\Desktop\\Programiranje\\CryptoBacktestingDashboard\\.github\\hooks\\log-hook.ps1\""
+        "command": "powershell.exe -ExecutionPolicy Bypass -File \"C:\\Projects\\CryptoBacktestingDashboard\\.github\\hooks\\log-hook.ps1\""
       }
     ],
     "SubagentInvoke": [
       {
         "type": "command",
-        "command": "powershell.exe -ExecutionPolicy Bypass -File \"C:\\Users\\gabys\\Desktop\\Programiranje\\CryptoBacktestingDashboard\\.github\\hooks\\log-hook.ps1\""
+        "command": "powershell.exe -ExecutionPolicy Bypass -File \"C:\\Projects\\CryptoBacktestingDashboard\\.github\\hooks\\log-hook.ps1\""
       }
     ]
   }

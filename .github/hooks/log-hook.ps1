@@ -1,4 +1,4 @@
-param([string]$LogFile = "C:\Users\gabys\Desktop\Programiranje\CryptoBacktestingDashboard\.github\hooks\agent_log.md")
+param([string]$LogFile = "$PSScriptRoot\agent_log.md")
 
 $raw = [Console]::In.ReadToEnd()
 

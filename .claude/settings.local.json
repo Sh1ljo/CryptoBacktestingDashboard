@@ -21,7 +21,8 @@
       "Bash(taskkill /f /im CryptoBacktestingDashboard.exe)",
       "Bash(dotnet run *)",
       "Bash(Start-Sleep -Seconds 8)",
-      "Bash(Write-Host \"App should be starting...\")"
+      "Bash(Write-Host \"App should be starting...\")",
+      "PowerShell(Get-Process -Name CryptoBacktestingDashboard -ErrorAction SilentlyContinue)"
     ]
   }
 }
