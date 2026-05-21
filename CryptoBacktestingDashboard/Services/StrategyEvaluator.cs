@@ -9,6 +9,14 @@ namespace CryptoBacktestingDashboard.Services
         Sell
     }
 
+    public static class ComparisonExtensions
+    {
+        public static TradingSignal ToTradingSignal(this IndicatorSignal signal)
+        {
+            return signal == IndicatorSignal.Buy ? TradingSignal.Buy : TradingSignal.Sell;
+        }
+    }
+
     public static class StrategyEvaluator
     {
         public static TradingSignal Evaluate(
@@ -75,6 +83,60 @@ namespace CryptoBacktestingDashboard.Services
 
                 case IndicatorType.ATR:
                     // ATR is a volatility measure, not a direct signal
+                    return TradingSignal.Hold;
+
+                default:
+                    return TradingSignal.Hold;
+            }
+        }
+
+        public static TradingSignal EvaluateComparison(
+            ComparisonType type,
+            decimal? currentValueA,
+            decimal? currentValueB,
+            decimal? previousValueA,
+            decimal? previousValueB,
+            IndicatorSignal targetSignal)
+        {
+            // Return Hold if either value is null
+            if (currentValueA == null || currentValueB == null)
+                return TradingSignal.Hold;
+
+            switch (type)
+            {
+                case ComparisonType.CrossoverAbove:
+                    // Signal when A crosses above B: prev A ≤ prev B AND curr A > curr B
+                    if (previousValueA == null || previousValueB == null)
+                        return TradingSignal.Hold;
+                    if (previousValueA <= previousValueB && currentValueA > currentValueB)
+                        return targetSignal.ToTradingSignal();
+                    return TradingSignal.Hold;
+
+                case ComparisonType.CrossoverBelow:
+                    // Signal when A crosses below B: prev A ≥ prev B AND curr A < curr B
+                    if (previousValueA == null || previousValueB == null)
+                        return TradingSignal.Hold;
+                    if (previousValueA >= previousValueB && currentValueA < currentValueB)
+                        return targetSignal.ToTradingSignal();
+                    return TradingSignal.Hold;
+
+                case ComparisonType.GreaterThan:
+                    // Signal when A > B
+                    if (currentValueA > currentValueB)
+                        return targetSignal.ToTradingSignal();
+                    return TradingSignal.Hold;
+
+                case ComparisonType.LessThan:
+                    // Signal when A < B
+                    if (currentValueA < currentValueB)
+                        return targetSignal.ToTradingSignal();
+                    return TradingSignal.Hold;
+
+                case ComparisonType.Equals:
+                    // Signal when A ≈ B (within 0.01% tolerance for floating point comparison)
+                    var tolerance = 0.0001m;
+                    if (currentValueB != 0 && System.Math.Abs(currentValueA.Value - currentValueB.Value) / currentValueB.Value < tolerance)
+                        return targetSignal.ToTradingSignal();
                     return TradingSignal.Hold;
 
                 default:

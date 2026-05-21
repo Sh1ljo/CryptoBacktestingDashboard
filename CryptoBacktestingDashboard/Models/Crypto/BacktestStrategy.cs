@@ -20,6 +20,9 @@ namespace CryptoBacktestingDashboard.Models.Crypto
         // N-N relationship: Strategy uses many indicators, an indicator can be in many strategies
         public virtual ICollection<Indicator> Indicators { get; set; }
 
+        // 1-N relationship: Strategy has many indicator comparisons
+        public virtual ICollection<IndicatorComparison> Comparisons { get; set; }
+
         // 1-N relationship: Strategy has one risk management rule
         [ForeignKey("RiskManagement")]
         public int RiskManagementId { get; set; }
@@ -31,6 +34,7 @@ namespace CryptoBacktestingDashboard.Models.Crypto
         public BacktestStrategy()
         {
             Indicators = new List<Indicator>();
+            Comparisons = new List<IndicatorComparison>();
             BacktestSessions = new List<BacktestSession>();
             CreatedAt = DateTime.Now;
             IsActive = true;

@@ -18,7 +18,7 @@
     <span class="text-danger field-validation-valid" data-valmsg-for="@Model.PropertyName" data-valmsg-replace="true"></span>
     
     <!-- Dropdown results -->
-    <ul id="@(controlId)Results" class="list-group position-absolute w-100" style="display: none; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></ul>
+    <ul id="@(controlId)Results" class="list-group position-absolute w-100" style="z-index: 1000; top: 100%;"></ul>
 </div>
 
 <script>
@@ -35,7 +35,7 @@
             // If empty, clear hidden input
             if (!query) {
                 hiddenInput.val('');
-                resultsList.hide();
+                resultsList.removeClass('dropdown-show');
                 return;
             }
 
@@ -54,7 +54,7 @@
                             li.on('click', function () {
                                 searchInput.val($(this).data('text'));
                                 hiddenInput.val($(this).data('id'));
-                                resultsList.hide();
+                                resultsList.removeClass('dropdown-show');
                                 // Trigger validation re-check on select
                                 hiddenInput.trigger('change');
                                 hiddenInput.trigger('blur');
@@ -62,10 +62,10 @@
                             
                             resultsList.append(li);
                         });
-                        resultsList.show();
+                        resultsList.addClass('dropdown-show');
                     } else {
                         resultsList.append('<li class="list-group-item text-muted">No results found</li>');
-                        resultsList.show();
+                        resultsList.addClass('dropdown-show');
                         hiddenInput.val('');
                     }
                 }
@@ -75,7 +75,7 @@
         // Hide results when clicking outside
         $(document).on('click', function (e) {
             if (!$(e.target).closest('.autocomplete-container').length) {
-                resultsList.hide();
+                resultsList.removeClass('dropdown-show');
             }
         });
     });

@@ -21,6 +21,10 @@ namespace CryptoBacktestingDashboard.Repositories.EF
             return await _context.BacktestStrategies
                 .Include(s => s.RiskManagement)
                 .Include(s => s.Indicators)
+                .Include(s => s.Comparisons)
+                    .ThenInclude(c => c.IndicatorA)
+                .Include(s => s.Comparisons)
+                    .ThenInclude(c => c.IndicatorB)
                 .ToListAsync();
         }
 
@@ -29,6 +33,10 @@ namespace CryptoBacktestingDashboard.Repositories.EF
             return await _context.BacktestStrategies
                 .Include(s => s.RiskManagement)
                 .Include(s => s.Indicators)
+                .Include(s => s.Comparisons)
+                    .ThenInclude(c => c.IndicatorA)
+                .Include(s => s.Comparisons)
+                    .ThenInclude(c => c.IndicatorB)
                 .Include(s => s.BacktestSessions)
                 .FirstOrDefaultAsync(m => m.Id == id);
         }

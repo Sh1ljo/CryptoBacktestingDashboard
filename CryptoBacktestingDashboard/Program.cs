@@ -20,6 +20,7 @@ builder.Services.AddScoped<BacktestSessionRepository>();
 builder.Services.AddScoped<BacktestStrategyRepository>();
 builder.Services.AddScoped<CryptoPairRepository>();
 builder.Services.AddScoped<IndicatorRepository>();
+builder.Services.AddScoped<IndicatorComparisonRepository>();
 builder.Services.AddScoped<RiskManagementRepository>();
 builder.Services.AddScoped<CandleDataRepository>();
 builder.Services.AddScoped<BacktestResultRepository>();

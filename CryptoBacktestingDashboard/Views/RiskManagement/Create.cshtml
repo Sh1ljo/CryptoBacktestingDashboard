@@ -9,8 +9,8 @@
     <p class="hero-subtitle" style="margin: 0; color: var(--rui-cool-gray);">Add a new risk management rule to your library.</p>
 </div>
 
-<div class="card" style="max-width: 800px; padding: 2.5rem; border-radius: 16px; border: 1px solid var(--rui-surface-light); box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-    <form asp-action="Create" method="post">
+<div class="card" style="max-width: 800px; margin: 0 auto; padding: 2.5rem; border-radius: 16px; border: 1px solid var(--rui-surface-light); box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+    <form asp-action="Create" method="post" style="width: 100%;">
 
         <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
             <div class="form-group" style="display: flex; flex-direction: column;">
@@ -47,9 +47,9 @@
 
         <hr style="border: none; border-top: 1px solid var(--rui-surface-light); margin: 2rem 0;" />
 
-        <div style="display: flex; gap: 1rem;">
+        <div style="display: flex; gap: 1rem; justify-content: center;">
             <button type="submit" class="btn btn-primary" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600;">Save Risk Management</button>
-            <a asp-action="Index" class="btn btn-outlined" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600; text-align: center;">Cancel</a>
+            <a asp-action="Index" class="btn btn-outline" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600; text-align: center;">Cancel</a>
         </div>
     </form>
 </div>

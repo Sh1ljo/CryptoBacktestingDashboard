@@ -13,12 +13,14 @@ namespace CryptoBacktestingDashboard.Controllers
         private readonly BacktestStrategyRepository _strategyRepository;
         private readonly RiskManagementRepository _riskManagementRepository;
         private readonly IndicatorRepository _indicatorRepository;
+        private readonly IndicatorComparisonRepository _comparisonRepository;
 
-        public BacktestStrategyController(BacktestStrategyRepository strategyRepository, RiskManagementRepository riskManagementRepository, IndicatorRepository indicatorRepository)
+        public BacktestStrategyController(BacktestStrategyRepository strategyRepository, RiskManagementRepository riskManagementRepository, IndicatorRepository indicatorRepository, IndicatorComparisonRepository comparisonRepository)
         {
             _strategyRepository = strategyRepository;
             _riskManagementRepository = riskManagementRepository;
             _indicatorRepository = indicatorRepository;
+            _comparisonRepository = comparisonRepository;
         }
 
         [HttpGet("")]
@@ -70,6 +72,7 @@ namespace CryptoBacktestingDashboard.Controllers
 
             ModelState.Remove("Indicators");
             ModelState.Remove("BacktestSessions");
+            ModelState.Remove("Comparisons");
 
             if (ModelState.IsValid)
             {
@@ -118,6 +121,7 @@ namespace CryptoBacktestingDashboard.Controllers
 
             ModelState.Remove("Indicators");
             ModelState.Remove("BacktestSessions");
+            ModelState.Remove("Comparisons");
 
             if (ModelState.IsValid)
             {

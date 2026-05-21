@@ -204,7 +204,7 @@ namespace CryptoBacktestingDashboard.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 5, 14, 17, 36, 6, 310, DateTimeKind.Local).AddTicks(2852),
+                            CreatedAt = new DateTime(2026, 5, 15, 1, 42, 49, 600, DateTimeKind.Local).AddTicks(4844),
                             Description = "A simple RSI strategy",
                             InitialCapital = 10000m,
                             IsActive = true,
@@ -291,7 +291,7 @@ namespace CryptoBacktestingDashboard.Migrations
                         {
                             Id = 1,
                             BaseAsset = "BTC",
-                            CreatedAt = new DateTime(2026, 5, 14, 17, 36, 6, 310, DateTimeKind.Local).AddTicks(2692),
+                            CreatedAt = new DateTime(2026, 5, 15, 1, 42, 49, 600, DateTimeKind.Local).AddTicks(4673),
                             CurrentPrice = 60000m,
                             QuoteAsset = "USD",
                             Symbol = "BTC/USD"
@@ -300,7 +300,7 @@ namespace CryptoBacktestingDashboard.Migrations
                         {
                             Id = 2,
                             BaseAsset = "ETH",
-                            CreatedAt = new DateTime(2026, 5, 14, 17, 36, 6, 310, DateTimeKind.Local).AddTicks(2696),
+                            CreatedAt = new DateTime(2026, 5, 15, 1, 42, 49, 600, DateTimeKind.Local).AddTicks(4677),
                             CurrentPrice = 2000m,
                             QuoteAsset = "USD",
                             Symbol = "ETH/USD"
@@ -341,7 +341,7 @@ namespace CryptoBacktestingDashboard.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 5, 14, 17, 36, 6, 310, DateTimeKind.Local).AddTicks(2803),
+                            CreatedAt = new DateTime(2026, 5, 15, 1, 42, 49, 600, DateTimeKind.Local).AddTicks(4784),
                             Description = "Relative Strength Index",
                             Name = "RSI",
                             Period = 14,
@@ -351,13 +351,53 @@ namespace CryptoBacktestingDashboard.Migrations
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 5, 14, 17, 36, 6, 310, DateTimeKind.Local).AddTicks(2807),
+                            CreatedAt = new DateTime(2026, 5, 15, 1, 42, 49, 600, DateTimeKind.Local).AddTicks(4788),
                             Description = "Moving Average Convergence Divergence",
                             Name = "MACD",
                             Period = 12,
                             Threshold = 26m,
                             Type = 1
                         });
+                });
+
+            modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.IndicatorComparison", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BacktestStrategyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ComparisonType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IndicatorAId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IndicatorBId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TargetSignal")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BacktestStrategyId");
+
+                    b.HasIndex("IndicatorAId");
+
+                    b.HasIndex("IndicatorBId");
+
+                    b.ToTable("IndicatorComparisons");
                 });
 
             modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.RiskManagement", b =>
@@ -391,7 +431,7 @@ namespace CryptoBacktestingDashboard.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 5, 14, 17, 36, 6, 310, DateTimeKind.Local).AddTicks(2827),
+                            CreatedAt = new DateTime(2026, 5, 15, 1, 42, 49, 600, DateTimeKind.Local).AddTicks(4810),
                             Description = "2% Stop Loss",
                             Name = "Stop Loss",
                             Type = 0,
@@ -400,7 +440,7 @@ namespace CryptoBacktestingDashboard.Migrations
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 5, 14, 17, 36, 6, 310, DateTimeKind.Local).AddTicks(2831),
+                            CreatedAt = new DateTime(2026, 5, 15, 1, 42, 49, 600, DateTimeKind.Local).AddTicks(4814),
                             Description = "5% Take Profit",
                             Name = "Take Profit",
                             Type = 1,
@@ -475,6 +515,33 @@ namespace CryptoBacktestingDashboard.Migrations
                     b.Navigation("CryptoPair");
                 });
 
+            modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.IndicatorComparison", b =>
+                {
+                    b.HasOne("CryptoBacktestingDashboard.Models.Crypto.BacktestStrategy", "BacktestStrategy")
+                        .WithMany("Comparisons")
+                        .HasForeignKey("BacktestStrategyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CryptoBacktestingDashboard.Models.Crypto.Indicator", "IndicatorA")
+                        .WithMany()
+                        .HasForeignKey("IndicatorAId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CryptoBacktestingDashboard.Models.Crypto.Indicator", "IndicatorB")
+                        .WithMany()
+                        .HasForeignKey("IndicatorBId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BacktestStrategy");
+
+                    b.Navigation("IndicatorA");
+
+                    b.Navigation("IndicatorB");
+                });
+
             modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.BacktestSession", b =>
                 {
                     b.Navigation("Results");
@@ -483,6 +550,8 @@ namespace CryptoBacktestingDashboard.Migrations
             modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.BacktestStrategy", b =>
                 {
                     b.Navigation("BacktestSessions");
+
+                    b.Navigation("Comparisons");
                 });
 
             modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.CryptoPair", b =>

@@ -31,12 +31,13 @@ namespace CryptoBacktestingDashboard.Services
             // Calculate the minimum warmup from the actual indicator periods
             var maxIndicatorPeriod = GetMaxIndicatorPeriod(strategy.Indicators);
             var warmupCandles = Math.Max(strategy.LookbackPeriod, maxIndicatorPeriod);
-            var minRequired = maxIndicatorPeriod + 5;
+            var minRequired = warmupCandles + 1;
 
             if (candles.Count < minRequired)
                 throw new InvalidOperationException(
-                    $"Not enough candle data. Need at least {minRequired} candles " +
-                    $"(longest indicator period is {maxIndicatorPeriod}), got {candles.Count}.");
+                    $"Not enough candle data in date range {session.StartDate:yyyy-MMM-dd} to {session.EndDate:yyyy-MMM-dd}. " +
+                    $"Need at least {minRequired} candles " +
+                    $"(warmup requires {warmupCandles}), got {candles.Count}.");
 
             var results = new List<BacktestResult>();
             decimal cash = session.InitialBalance;
@@ -63,6 +64,14 @@ namespace CryptoBacktestingDashboard.Services
                 foreach (var indicator in strategy.Indicators)
                 {
                     var signal = ComputeSignal(indicator, currentPrices, currentHighs, currentLows, i, candle);
+                    if (signal == TradingSignal.Buy) hasBuy = true;
+                    else if (signal == TradingSignal.Sell) hasSell = true;
+                }
+
+                // Compute signals from indicator comparisons
+                foreach (var comparison in strategy.Comparisons)
+                {
+                    var signal = ComputeComparisonSignal(comparison, currentPrices, currentHighs, currentLows, i);
                     if (signal == TradingSignal.Buy) hasBuy = true;
                     else if (signal == TradingSignal.Sell) hasSell = true;
                 }
@@ -221,54 +230,54 @@ namespace CryptoBacktestingDashboard.Services
             switch (indicator.Type)
             {
                 case IndicatorType.RSI:
-                {
-                    var rsi = IndicatorCalculator.CalculateRsi(prices, indicator.Period);
-                    var curr = rsi.ElementAtOrDefault(currentIndex);
-                    var prev = rsi.ElementAtOrDefault(currentIndex - 1);
-                    return StrategyEvaluator.Evaluate(indicator.Type, curr, prev, indicator.Threshold);
-                }
+                    {
+                        var rsi = IndicatorCalculator.CalculateRsi(prices, indicator.Period);
+                        var curr = rsi.ElementAtOrDefault(currentIndex);
+                        var prev = rsi.ElementAtOrDefault(currentIndex - 1);
+                        return StrategyEvaluator.Evaluate(indicator.Type, curr, prev, indicator.Threshold);
+                    }
 
                 case IndicatorType.MACD:
-                {
-                    int fastPeriod = indicator.Period > 0 ? indicator.Period : 12;
-                    int slowPeriod = (int)(indicator.Threshold > 0 ? indicator.Threshold : 26);
-                    var (_, _, hist) = IndicatorCalculator.CalculateMacd(prices, fastPeriod, slowPeriod);
-                    var curr = hist.ElementAtOrDefault(currentIndex);
-                    var prev = hist.ElementAtOrDefault(currentIndex - 1);
-                    return StrategyEvaluator.Evaluate(indicator.Type, curr, prev, indicator.Threshold);
-                }
+                    {
+                        int fastPeriod = indicator.Period > 0 ? indicator.Period : 12;
+                        int slowPeriod = (int)(indicator.Threshold > 0 ? indicator.Threshold : 26);
+                        var (_, _, hist) = IndicatorCalculator.CalculateMacd(prices, fastPeriod, slowPeriod);
+                        var curr = hist.ElementAtOrDefault(currentIndex);
+                        var prev = hist.ElementAtOrDefault(currentIndex - 1);
+                        return StrategyEvaluator.Evaluate(indicator.Type, curr, prev, indicator.Threshold);
+                    }
 
                 case IndicatorType.MovingAverage:
-                {
-                    var ma = IndicatorCalculator.CalculateEma(prices, indicator.Period);
-                    var currMa = ma.ElementAtOrDefault(currentIndex);
-                    var prevMa = ma.ElementAtOrDefault(currentIndex - 1);
-                    return StrategyEvaluator.Evaluate(
-                        indicator.Type, currMa, prevMa, indicator.Threshold,
-                        currentPrice: currentCandle.Close,
-                        previousPrice: currentIndex > 0 ? prices[currentIndex - 1] : null);
-                }
+                    {
+                        var ma = IndicatorCalculator.CalculateEma(prices, indicator.Period);
+                        var currMa = ma.ElementAtOrDefault(currentIndex);
+                        var prevMa = ma.ElementAtOrDefault(currentIndex - 1);
+                        return StrategyEvaluator.Evaluate(
+                            indicator.Type, currMa, prevMa, indicator.Threshold,
+                            currentPrice: currentCandle.Close,
+                            previousPrice: currentIndex > 0 ? prices[currentIndex - 1] : null);
+                    }
 
                 case IndicatorType.BollingerBands:
-                {
-                    var (upper, _, lower) = IndicatorCalculator.CalculateBollingerBands(
-                        prices, indicator.Period, indicator.Threshold);
-                    var currUpper = upper.ElementAtOrDefault(currentIndex);
-                    var currLower = lower.ElementAtOrDefault(currentIndex);
-                    return StrategyEvaluator.Evaluate(
-                        indicator.Type, null, null, indicator.Threshold,
-                        currentPrice: currentCandle.Close,
-                        upperBand: currUpper, lowerBand: currLower);
-                }
+                    {
+                        var (upper, _, lower) = IndicatorCalculator.CalculateBollingerBands(
+                            prices, indicator.Period, indicator.Threshold);
+                        var currUpper = upper.ElementAtOrDefault(currentIndex);
+                        var currLower = lower.ElementAtOrDefault(currentIndex);
+                        return StrategyEvaluator.Evaluate(
+                            indicator.Type, null, null, indicator.Threshold,
+                            currentPrice: currentCandle.Close,
+                            upperBand: currUpper, lowerBand: currLower);
+                    }
 
                 case IndicatorType.Stochastic:
-                {
-                    var (kValues, _) = IndicatorCalculator.CalculateStochastic(
-                        highs, lows, prices, indicator.Period);
-                    var curr = kValues.ElementAtOrDefault(currentIndex);
-                    var prev = kValues.ElementAtOrDefault(currentIndex - 1);
-                    return StrategyEvaluator.Evaluate(indicator.Type, curr, prev, indicator.Threshold);
-                }
+                    {
+                        var (kValues, _) = IndicatorCalculator.CalculateStochastic(
+                            highs, lows, prices, indicator.Period);
+                        var curr = kValues.ElementAtOrDefault(currentIndex);
+                        var prev = kValues.ElementAtOrDefault(currentIndex - 1);
+                        return StrategyEvaluator.Evaluate(indicator.Type, curr, prev, indicator.Threshold);
+                    }
 
                 case IndicatorType.ATR:
                     // ATR is informational (volatility), no direct signal
@@ -277,6 +286,63 @@ namespace CryptoBacktestingDashboard.Services
                 default:
                     return TradingSignal.Hold;
             }
+        }
+
+        private TradingSignal ComputeComparisonSignal(
+            IndicatorComparison comparison, List<decimal> prices, List<decimal> highs, List<decimal> lows,
+            int currentIndex)
+        {
+            if (comparison.IndicatorA == null || comparison.IndicatorB == null)
+                return TradingSignal.Hold;
+
+            var indicatorA = comparison.IndicatorA;
+            var indicatorB = comparison.IndicatorB;
+
+            // Compute values for both indicators
+            var valuesA = ComputeIndicatorValues(indicatorA, prices, highs, lows);
+            var valuesB = ComputeIndicatorValues(indicatorB, prices, highs, lows);
+
+            var currA = valuesA.ElementAtOrDefault(currentIndex);
+            var currB = valuesB.ElementAtOrDefault(currentIndex);
+            var prevA = valuesA.ElementAtOrDefault(currentIndex - 1);
+            var prevB = valuesB.ElementAtOrDefault(currentIndex - 1);
+
+            return StrategyEvaluator.EvaluateComparison(
+                comparison.ComparisonType, currA, currB, prevA, prevB, comparison.TargetSignal);
+        }
+
+        private List<decimal?> ComputeIndicatorValues(Indicator indicator, List<decimal> prices, List<decimal> highs, List<decimal> lows)
+        {
+            if (indicator.Type == IndicatorType.RSI)
+                return IndicatorCalculator.CalculateRsi(prices, indicator.Period);
+
+            if (indicator.Type == IndicatorType.MACD)
+            {
+                int fastPeriod = indicator.Period > 0 ? indicator.Period : 12;
+                int slowPeriod = (int)(indicator.Threshold > 0 ? indicator.Threshold : 26);
+                var (_, _, hist) = IndicatorCalculator.CalculateMacd(prices, fastPeriod, slowPeriod);
+                return hist;
+            }
+
+            if (indicator.Type == IndicatorType.MovingAverage)
+                return IndicatorCalculator.CalculateEma(prices, indicator.Period);
+
+            if (indicator.Type == IndicatorType.BollingerBands)
+            {
+                var (_, middle, _) = IndicatorCalculator.CalculateBollingerBands(prices, indicator.Period, indicator.Threshold);
+                return middle;
+            }
+
+            if (indicator.Type == IndicatorType.Stochastic)
+            {
+                var (kValues, _) = IndicatorCalculator.CalculateStochastic(highs, lows, prices, indicator.Period);
+                return kValues;
+            }
+
+            if (indicator.Type == IndicatorType.ATR)
+                return IndicatorCalculator.CalculateAtr(highs, lows, prices, indicator.Period);
+
+            return new List<decimal?>();
         }
 
         private decimal CalculatePositionSize(
@@ -288,8 +354,9 @@ namespace CryptoBacktestingDashboard.Services
             var risk = strategy.RiskManagement;
             if (risk == null)
             {
-                // Default: invest all cash
-                return Math.Round(cash / entryPrice, 6);
+                // Default: invest all cash (leaving room for commission)
+                var availableCash = Math.Max(0, cash - CommissionPerTrade);
+                return Math.Round(availableCash / entryPrice, 6);
             }
 
             switch (risk.Type)
@@ -298,17 +365,19 @@ namespace CryptoBacktestingDashboard.Services
                     return risk.Value;
 
                 case RiskManagementType.PercentageRisk:
-                    // Risk Value% of capital: position size = cash * (Value/100) / entryPrice
+                    // Risk Value% of capital: position size = cash * (Value/100)
                     var riskCapital = cash * (risk.Value / 100m);
-                    return Math.Round(riskCapital / entryPrice, 6);
+                    var availableRisk = Math.Max(0, riskCapital - CommissionPerTrade);
+                    return Math.Round(availableRisk / entryPrice, 6);
 
                 case RiskManagementType.StopLoss:
                 case RiskManagementType.TakeProfit:
                 case RiskManagementType.TrailingStop:
                 default:
                     // If risk management is for exit (SL/TP), still need a position size
-                    // Default to full allocation
-                    return Math.Round(cash / entryPrice, 6);
+                    // Default to full allocation (leaving room for commission)
+                    var available = Math.Max(0, cash - CommissionPerTrade);
+                    return Math.Round(available / entryPrice, 6);
             }
         }
     }

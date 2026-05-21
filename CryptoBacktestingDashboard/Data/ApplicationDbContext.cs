@@ -17,6 +17,7 @@ namespace CryptoBacktestingDashboard.Data
         public DbSet<CandleData> CandleData { get; set; }
         public DbSet<CryptoPair> CryptoPairs { get; set; }
         public DbSet<Indicator> Indicators { get; set; }
+        public DbSet<IndicatorComparison> IndicatorComparisons { get; set; }
         public DbSet<RiskManagement> RiskManagements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
