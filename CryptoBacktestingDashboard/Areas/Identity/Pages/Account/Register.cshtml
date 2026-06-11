@@ -1,0 +1,81 @@
+@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="page-hero">
+    <h1 class="page-hero__title">Create Your Account</h1>
+    <p class="page-hero__subtitle">Set up your profile to start backtesting crypto strategies.</p>
+</div>
+
+<div class="form-card" style="max-width: 600px;">
+    <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-shell">
+
+        <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+        <div class="form-group form-block">
+            <label asp-for="Input.Email" class="form-label">Email</label>
+            <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+            <span asp-validation-for="Input.Email" class="text-danger"></span>
+        </div>
+
+        <div class="grid grid-2 form-grid">
+            <div class="form-group">
+                <label asp-for="Input.OIB" class="form-label">OIB</label>
+                <input asp-for="Input.OIB" class="form-control" aria-required="true" placeholder="12345678901" maxlength="11" />
+                <small class="form-help">Personal identification number, exactly 11 digits.</small>
+                <span asp-validation-for="Input.OIB" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Input.JMBG" class="form-label">JMBG</label>
+                <input asp-for="Input.JMBG" class="form-control" aria-required="true" placeholder="0101990330000" maxlength="13" />
+                <small class="form-help">Unique master citizen number, exactly 13 digits.</small>
+                <span asp-validation-for="Input.JMBG" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="grid grid-2 form-grid">
+            <div class="form-group">
+                <label asp-for="Input.Password" class="form-label">Password</label>
+                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Min 6 characters" />
+                <span asp-validation-for="Input.Password" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Input.ConfirmPassword" class="form-label">Confirm Password</label>
+                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="Repeat your password" />
+                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+            </div>
+        </div>
+
+        <hr class="form-divider" />
+
+        <div class="form-actions" style="flex-direction: column; gap: 0.75rem;">
+            <button id="registerSubmit" type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
+            <div style="text-align: center;">
+                <small class="form-help">Already have an account? <a asp-area="Identity" asp-page="/Account/Login">Log in</a></small>
+            </div>
+        </div>
+    </form>
+</div>
+
+@if ((Model.ExternalLogins?.Count ?? 0) > 0)
+{
+    <div class="form-card" style="max-width: 600px; margin-top: 1.5rem; text-align: center;">
+        <h3 style="margin-top: 0; font-size: 1rem;">Or register with</h3>
+        <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-shell">
+            <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+                @foreach (var provider in Model.ExternalLogins!)
+                {
+                    <button type="submit" class="btn btn-outline" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">
+                        @provider.DisplayName
+                    </button>
+                }
+            </div>
+        </form>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

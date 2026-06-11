@@ -11,7 +11,9 @@ namespace CryptoBacktestingDashboard.Services
     {
         private readonly CandleDataRepository _candleRepo;
         private readonly BacktestResultRepository _resultRepo;
-        private const decimal CommissionPerTrade = 10m;
+
+        // Commission charged per side (entry and exit) as a fraction of trade notional.
+        private const decimal CommissionRate = 0.001m;
 
         public BacktestService(CandleDataRepository candleRepo, BacktestResultRepository resultRepo)
         {
@@ -22,16 +24,21 @@ namespace CryptoBacktestingDashboard.Services
         public async Task<BacktestSession> RunBacktestAsync(BacktestSession session)
         {
             var strategy = session.Strategy;
-            if (strategy == null || strategy.Indicators == null || strategy.Indicators.Count == 0)
-                throw new InvalidOperationException("Strategy must have at least one indicator.");
+            if (strategy == null)
+                throw new InvalidOperationException("Strategy not loaded.");
+
+            var hasIndicators = strategy.Indicators != null && strategy.Indicators.Count > 0;
+            var hasComparisons = strategy.Comparisons != null && strategy.Comparisons.Count > 0;
+            if (!hasIndicators && !hasComparisons)
+                throw new InvalidOperationException("Strategy must have at least one indicator or comparison.");
 
             var candles = await _candleRepo.GetByPairIdAndDateRangeAsync(
                 session.CryptoPairId, session.StartDate, session.EndDate);
 
-            // Calculate the minimum warmup from the actual indicator periods
-            var maxIndicatorPeriod = GetMaxIndicatorPeriod(strategy.Indicators);
+            var maxIndicatorPeriod = GetMaxIndicatorPeriod(strategy);
             var warmupCandles = Math.Max(strategy.LookbackPeriod, maxIndicatorPeriod);
-            var minRequired = warmupCandles + 1;
+            var firstTradableIndex = warmupCandles + 1;
+            var minRequired = firstTradableIndex + 1;
 
             if (candles.Count < minRequired)
                 throw new InvalidOperationException(
@@ -40,187 +47,259 @@ namespace CryptoBacktestingDashboard.Services
                     $"(warmup requires {warmupCandles}), got {candles.Count}.");
 
             var results = new List<BacktestResult>();
+            var dir = strategy.TradeDirection;
+
             decimal cash = session.InitialBalance;
             decimal? positionEntryPrice = null;
             decimal? positionQuantity = null;
-            decimal? positionSize = null;
+            decimal? positionSize = null;          // entry notional (qty * entryPrice)
             int? positionOpenIndex = null;
-            decimal highestPriceSinceEntry = 0;
+            bool positionIsShort = false;
+            decimal highestPriceSinceEntry = 0;    // for long trailing stop
+            decimal lowestPriceSinceEntry = decimal.MaxValue; // for short trailing stop
+            decimal positionEntryCommission = 0;
 
             var prices = candles.Select(c => c.Close).ToList();
             var highs = candles.Select(c => c.High).ToList();
             var lows = candles.Select(c => c.Low).ToList();
 
-            for (int i = warmupCandles; i < candles.Count; i++)
+            for (int i = firstTradableIndex; i < candles.Count; i++)
             {
                 var candle = candles[i];
                 var currentPrices = prices.Take(i + 1).ToList();
                 var currentHighs = highs.Take(i + 1).ToList();
                 var currentLows = lows.Take(i + 1).ToList();
 
-                // Compute signals from all indicators
+                // ── Compute combined signal ──────────────────────────────────
                 bool hasBuy = false, hasSell = false;
 
-                foreach (var indicator in strategy.Indicators)
+                if (hasComparisons)
                 {
-                    var signal = ComputeSignal(indicator, currentPrices, currentHighs, currentLows, i, candle);
-                    if (signal == TradingSignal.Buy) hasBuy = true;
-                    else if (signal == TradingSignal.Sell) hasSell = true;
+                    foreach (var comparison in strategy.Comparisons)
+                    {
+                        var sig = ComputeComparisonSignal(comparison, currentPrices, currentHighs, currentLows, i);
+                        if (sig == TradingSignal.Buy) hasBuy = true;
+                        else if (sig == TradingSignal.Sell) hasSell = true;
+                    }
                 }
 
-                // Compute signals from indicator comparisons
-                foreach (var comparison in strategy.Comparisons)
+                if (hasIndicators)
                 {
-                    var signal = ComputeComparisonSignal(comparison, currentPrices, currentHighs, currentLows, i);
-                    if (signal == TradingSignal.Buy) hasBuy = true;
-                    else if (signal == TradingSignal.Sell) hasSell = true;
+                    foreach (var indicator in strategy.Indicators)
+                    {
+                        var sig = ComputeSignal(indicator, currentPrices, currentHighs, currentLows, i, candle);
+                        if (sig == TradingSignal.Buy) hasBuy = true;
+                        else if (sig == TradingSignal.Sell) hasSell = true;
+                    }
                 }
 
-                // Combined signal: simple majority wins, conflicting signals = hold
                 TradingSignal combinedSignal = TradingSignal.Hold;
                 if (hasBuy && !hasSell) combinedSignal = TradingSignal.Buy;
                 else if (hasSell && !hasBuy) combinedSignal = TradingSignal.Sell;
 
-                // Check risk management for open position
+                // ── Manage open position ─────────────────────────────────────
                 if (positionEntryPrice.HasValue)
                 {
-                    var risk = strategy.RiskManagement;
                     bool exitByRisk = false;
                     decimal exitPrice = candle.Close;
 
-                    if (risk != null)
+                    if (!positionIsShort)
                     {
-                        switch (risk.Type)
+                        // Long risk management
+                        highestPriceSinceEntry = Math.Max(highestPriceSinceEntry, candle.High);
+                        var stopLevel = positionEntryPrice.Value * (1 - strategy.StopLossPercent / 100m);
+                        if (strategy.TrailingStopPercent.HasValue && strategy.TrailingStopPercent.Value > 0)
                         {
-                            case RiskManagementType.StopLoss:
-                                var stopLevel = positionEntryPrice.Value * (1 - risk.Value / 100m);
-                                if (candle.Low <= stopLevel)
-                                {
-                                    exitPrice = stopLevel;
-                                    exitByRisk = true;
-                                }
-                                break;
-
-                            case RiskManagementType.TakeProfit:
-                                var takeProfitLevel = positionEntryPrice.Value * (1 + risk.Value / 100m);
-                                if (candle.High >= takeProfitLevel)
-                                {
-                                    exitPrice = takeProfitLevel;
-                                    exitByRisk = true;
-                                }
-                                break;
-
-                            case RiskManagementType.TrailingStop:
-                                highestPriceSinceEntry = Math.Max(highestPriceSinceEntry, candle.High);
-                                var trailStop = highestPriceSinceEntry * (1 - risk.Value / 100m);
-                                if (candle.Low <= trailStop)
-                                {
-                                    exitPrice = trailStop;
-                                    exitByRisk = true;
-                                }
-                                break;
+                            var trailLevel = highestPriceSinceEntry * (1 - strategy.TrailingStopPercent.Value / 100m);
+                            stopLevel = Math.Max(stopLevel, trailLevel);
                         }
+                        var tpLevel = positionEntryPrice.Value * (1 + strategy.TakeProfitPercent / 100m);
+
+                        // Conservative: assume stop hit before TP if candle spans both
+                        if (candle.Low <= stopLevel)
+                        { exitPrice = stopLevel; exitByRisk = true; }
+                        else if (candle.High >= tpLevel)
+                        { exitPrice = tpLevel; exitByRisk = true; }
+                    }
+                    else
+                    {
+                        // Short risk management (inverted: stop above entry, TP below)
+                        lowestPriceSinceEntry = Math.Min(lowestPriceSinceEntry, candle.Low);
+                        var stopLevel = positionEntryPrice.Value * (1 + strategy.StopLossPercent / 100m);
+                        if (strategy.TrailingStopPercent.HasValue && strategy.TrailingStopPercent.Value > 0)
+                        {
+                            // Trail stop tightens downward as price falls
+                            var trailLevel = lowestPriceSinceEntry * (1 + strategy.TrailingStopPercent.Value / 100m);
+                            stopLevel = Math.Min(stopLevel, trailLevel);
+                        }
+                        var tpLevel = positionEntryPrice.Value * (1 - strategy.TakeProfitPercent / 100m);
+
+                        // Conservative: stop (upside) checked before TP (downside)
+                        if (candle.High >= stopLevel)
+                        { exitPrice = stopLevel; exitByRisk = true; }
+                        else if (candle.Low <= tpLevel)
+                        { exitPrice = tpLevel; exitByRisk = true; }
                     }
 
-                    if (exitByRisk || combinedSignal == TradingSignal.Sell)
+                    // Determine whether the signal closes this position
+                    bool signalCloses = !positionIsShort && combinedSignal == TradingSignal.Sell
+                                     || positionIsShort  && combinedSignal == TradingSignal.Buy;
+
+                    if (exitByRisk || signalCloses)
                     {
-                        // Close position
+                        var exitNotional = exitPrice * positionQuantity!.Value;
+                        var exitCommission = exitNotional * CommissionRate;
+
+                        decimal cashReturn;
+                        if (!positionIsShort)
+                        {
+                            // Long close: receive exit proceeds
+                            cashReturn = exitNotional - exitCommission;
+                        }
+                        else
+                        {
+                            // Short close: return collateral ± P/L
+                            // Net = (entryPrice - exitPrice) * qty - totalCommission
+                            // Cash = collateral(positionSize) + netProfit + exitCommission adjustment
+                            cashReturn = 2 * positionSize!.Value - exitNotional - exitCommission;
+                        }
+
                         var trade = new BacktestResult
                         {
                             BacktestSessionId = session.Id,
-                            TradeType = TradeType.Long,
+                            TradeType = positionIsShort ? TradeType.Short : TradeType.Long,
                             EntryTime = candles[positionOpenIndex!.Value].OpenTime,
                             ExitTime = candle.OpenTime,
                             EntryPrice = positionEntryPrice.Value,
                             ExitPrice = exitPrice,
-                            Quantity = positionQuantity!.Value,
-                            Commission = CommissionPerTrade,
-                            IsWinningTrade = exitPrice > positionEntryPrice.Value
+                            Quantity = positionQuantity.Value,
+                            Commission = positionEntryCommission + exitCommission,
+                            IsWinningTrade = positionIsShort
+                                ? exitPrice < positionEntryPrice.Value
+                                : exitPrice > positionEntryPrice.Value
                         };
 
-                        cash += (exitPrice * positionQuantity.Value) - CommissionPerTrade;
+                        cash += cashReturn;
                         results.Add(trade);
 
                         positionEntryPrice = null;
                         positionQuantity = null;
                         positionSize = null;
                         positionOpenIndex = null;
+                        positionIsShort = false;
                         highestPriceSinceEntry = 0;
-                    }
-                    else
-                    {
-                        // Update trailing highest price
-                        highestPriceSinceEntry = Math.Max(highestPriceSinceEntry, candle.High);
+                        lowestPriceSinceEntry = decimal.MaxValue;
+                        positionEntryCommission = 0;
                     }
                 }
 
-                // Open new position if no open position and we have a buy signal
-                if (!positionEntryPrice.HasValue && combinedSignal == TradingSignal.Buy)
+                // ── Open new position ────────────────────────────────────────
+                // Evaluated after any close, so a flip (close long + open short on same
+                // candle) works naturally when TradeDirection == Both.
+                if (!positionEntryPrice.HasValue)
                 {
-                    var qty = CalculatePositionSize(cash, candle.Close, strategy, currentPrices, currentHighs, currentLows);
-                    if (qty > 0)
-                    {
-                        var cost = qty * candle.Close;
-                        if (cost + CommissionPerTrade <= cash)
-                        {
-                            positionEntryPrice = candle.Close;
-                            positionQuantity = qty;
-                            positionSize = cost;
-                            positionOpenIndex = i;
-                            highestPriceSinceEntry = candle.High;
+                    bool openLong  = combinedSignal == TradingSignal.Buy
+                                  && (dir == TradeDirection.LongOnly || dir == TradeDirection.Both);
+                    bool openShort = combinedSignal == TradingSignal.Sell
+                                  && (dir == TradeDirection.ShortOnly || dir == TradeDirection.Both);
 
-                            cash -= (cost + CommissionPerTrade);
+                    if (openLong || openShort)
+                    {
+                        var qty = CalculatePositionSize(cash, candle.Close, strategy, currentPrices, currentHighs, currentLows);
+                        if (qty > 0)
+                        {
+                            var cost = qty * candle.Close;
+                            var entryCommission = cost * CommissionRate;
+                            if (cost + entryCommission <= cash)
+                            {
+                                positionEntryPrice = candle.Close;
+                                positionQuantity = qty;
+                                positionSize = cost;
+                                positionOpenIndex = i;
+                                positionIsShort = openShort;
+                                highestPriceSinceEntry = candle.High;
+                                lowestPriceSinceEntry = candle.Low;
+                                positionEntryCommission = entryCommission;
+                                cash -= (cost + entryCommission);
+                            }
                         }
                     }
                 }
             }
 
-            // Close any remaining position at last price
+            // ── Close any remaining position at last candle ──────────────────
             if (positionEntryPrice.HasValue && positionOpenIndex.HasValue)
             {
                 var lastCandle = candles[^1];
+                var exitNotional = lastCandle.Close * positionQuantity!.Value;
+                var exitCommission = exitNotional * CommissionRate;
+
+                decimal cashReturn = positionIsShort
+                    ? 2 * positionSize!.Value - exitNotional - exitCommission
+                    : exitNotional - exitCommission;
+
                 var trade = new BacktestResult
                 {
                     BacktestSessionId = session.Id,
-                    TradeType = TradeType.Long,
+                    TradeType = positionIsShort ? TradeType.Short : TradeType.Long,
                     EntryTime = candles[positionOpenIndex.Value].OpenTime,
                     ExitTime = lastCandle.OpenTime,
                     EntryPrice = positionEntryPrice.Value,
                     ExitPrice = lastCandle.Close,
-                    Quantity = positionQuantity!.Value,
-                    Commission = CommissionPerTrade,
-                    IsWinningTrade = lastCandle.Close > positionEntryPrice.Value
+                    Quantity = positionQuantity.Value,
+                    Commission = positionEntryCommission + exitCommission,
+                    IsWinningTrade = positionIsShort
+                        ? lastCandle.Close < positionEntryPrice.Value
+                        : lastCandle.Close > positionEntryPrice.Value
                 };
 
-                cash += (lastCandle.Close * positionQuantity.Value) - CommissionPerTrade;
+                cash += cashReturn;
                 results.Add(trade);
             }
 
-            // Update session
             session.FinalBalance = cash;
             session.ExecutedAt = DateTime.Now;
 
-            // Persist results
             await _resultRepo.DeleteBySessionIdAsync(session.Id);
-
             foreach (var r in results)
-            {
                 await _resultRepo.InsertItemAsync(r);
-            }
 
             session.Results = results;
             return session;
         }
 
-        private static int GetMaxIndicatorPeriod(ICollection<Indicator> indicators)
+        private static int GetMaxIndicatorPeriod(BacktestStrategy strategy)
         {
-            return indicators.Max(i => i.Type switch
+            int maxPeriod = 0;
+            if (strategy.Indicators != null && strategy.Indicators.Count > 0)
+                maxPeriod = strategy.Indicators.Max(GetIndicatorWarmup);
+
+            if (strategy.Comparisons != null && strategy.Comparisons.Count > 0)
             {
-                IndicatorType.MACD => Math.Max(i.Period, (int)i.Threshold), // slow period is stored in Threshold
-                IndicatorType.BollingerBands => i.Period,
-                IndicatorType.Stochastic => i.Period + 3 + 3, // K period + smoothing + D period
-                _ => i.Period
-            });
+                foreach (var c in strategy.Comparisons)
+                {
+                    if (c.IndicatorA != null) maxPeriod = Math.Max(maxPeriod, GetIndicatorWarmup(c.IndicatorA));
+                    if (c.IndicatorB != null) maxPeriod = Math.Max(maxPeriod, GetIndicatorWarmup(c.IndicatorB));
+                }
+            }
+            return maxPeriod;
+        }
+
+        private static int GetIndicatorWarmup(Indicator indicator)
+        {
+            switch (indicator.Type)
+            {
+                case IndicatorType.MACD:
+                    var fastPeriod = indicator.Period > 0 ? indicator.Period : 12;
+                    var slowPeriod = (int)(indicator.Threshold > 0 ? indicator.Threshold : 26);
+                    return Math.Max(fastPeriod, slowPeriod) + 9;
+                case IndicatorType.BollingerBands:
+                    return indicator.Period;
+                case IndicatorType.Stochastic:
+                    return indicator.Period + 3 + 3;
+                default:
+                    return indicator.Period;
+            }
         }
 
         private TradingSignal ComputeSignal(
@@ -230,59 +309,46 @@ namespace CryptoBacktestingDashboard.Services
             switch (indicator.Type)
             {
                 case IndicatorType.RSI:
-                    {
-                        var rsi = IndicatorCalculator.CalculateRsi(prices, indicator.Period);
-                        var curr = rsi.ElementAtOrDefault(currentIndex);
-                        var prev = rsi.ElementAtOrDefault(currentIndex - 1);
-                        return StrategyEvaluator.Evaluate(indicator.Type, curr, prev, indicator.Threshold);
-                    }
-
+                {
+                    var rsi = IndicatorCalculator.CalculateRsi(prices, indicator.Period);
+                    return StrategyEvaluator.Evaluate(indicator.Type,
+                        rsi.ElementAtOrDefault(currentIndex), rsi.ElementAtOrDefault(currentIndex - 1),
+                        indicator.Threshold);
+                }
                 case IndicatorType.MACD:
-                    {
-                        int fastPeriod = indicator.Period > 0 ? indicator.Period : 12;
-                        int slowPeriod = (int)(indicator.Threshold > 0 ? indicator.Threshold : 26);
-                        var (_, _, hist) = IndicatorCalculator.CalculateMacd(prices, fastPeriod, slowPeriod);
-                        var curr = hist.ElementAtOrDefault(currentIndex);
-                        var prev = hist.ElementAtOrDefault(currentIndex - 1);
-                        return StrategyEvaluator.Evaluate(indicator.Type, curr, prev, indicator.Threshold);
-                    }
-
+                {
+                    int fast = indicator.Period > 0 ? indicator.Period : 12;
+                    int slow = (int)(indicator.Threshold > 0 ? indicator.Threshold : 26);
+                    var (_, _, hist) = IndicatorCalculator.CalculateMacd(prices, fast, slow);
+                    return StrategyEvaluator.Evaluate(indicator.Type,
+                        hist.ElementAtOrDefault(currentIndex), hist.ElementAtOrDefault(currentIndex - 1),
+                        indicator.Threshold);
+                }
                 case IndicatorType.MovingAverage:
-                    {
-                        var ma = IndicatorCalculator.CalculateEma(prices, indicator.Period);
-                        var currMa = ma.ElementAtOrDefault(currentIndex);
-                        var prevMa = ma.ElementAtOrDefault(currentIndex - 1);
-                        return StrategyEvaluator.Evaluate(
-                            indicator.Type, currMa, prevMa, indicator.Threshold,
-                            currentPrice: currentCandle.Close,
-                            previousPrice: currentIndex > 0 ? prices[currentIndex - 1] : null);
-                    }
-
+                {
+                    var ma = IndicatorCalculator.CalculateEma(prices, indicator.Period);
+                    return StrategyEvaluator.Evaluate(indicator.Type,
+                        ma.ElementAtOrDefault(currentIndex), ma.ElementAtOrDefault(currentIndex - 1),
+                        indicator.Threshold,
+                        currentPrice: currentCandle.Close,
+                        previousPrice: currentIndex > 0 ? prices[currentIndex - 1] : null);
+                }
                 case IndicatorType.BollingerBands:
-                    {
-                        var (upper, _, lower) = IndicatorCalculator.CalculateBollingerBands(
-                            prices, indicator.Period, indicator.Threshold);
-                        var currUpper = upper.ElementAtOrDefault(currentIndex);
-                        var currLower = lower.ElementAtOrDefault(currentIndex);
-                        return StrategyEvaluator.Evaluate(
-                            indicator.Type, null, null, indicator.Threshold,
-                            currentPrice: currentCandle.Close,
-                            upperBand: currUpper, lowerBand: currLower);
-                    }
-
+                {
+                    var (upper, _, lower) = IndicatorCalculator.CalculateBollingerBands(
+                        prices, indicator.Period, indicator.Threshold);
+                    return StrategyEvaluator.Evaluate(indicator.Type, null, null, indicator.Threshold,
+                        currentPrice: currentCandle.Close,
+                        upperBand: upper.ElementAtOrDefault(currentIndex),
+                        lowerBand: lower.ElementAtOrDefault(currentIndex));
+                }
                 case IndicatorType.Stochastic:
-                    {
-                        var (kValues, _) = IndicatorCalculator.CalculateStochastic(
-                            highs, lows, prices, indicator.Period);
-                        var curr = kValues.ElementAtOrDefault(currentIndex);
-                        var prev = kValues.ElementAtOrDefault(currentIndex - 1);
-                        return StrategyEvaluator.Evaluate(indicator.Type, curr, prev, indicator.Threshold);
-                    }
-
-                case IndicatorType.ATR:
-                    // ATR is informational (volatility), no direct signal
-                    return TradingSignal.Hold;
-
+                {
+                    var (kValues, _) = IndicatorCalculator.CalculateStochastic(highs, lows, prices, indicator.Period);
+                    return StrategyEvaluator.Evaluate(indicator.Type,
+                        kValues.ElementAtOrDefault(currentIndex), kValues.ElementAtOrDefault(currentIndex - 1),
+                        indicator.Threshold);
+                }
                 default:
                     return TradingSignal.Hold;
             }
@@ -295,54 +361,46 @@ namespace CryptoBacktestingDashboard.Services
             if (comparison.IndicatorA == null || comparison.IndicatorB == null)
                 return TradingSignal.Hold;
 
-            var indicatorA = comparison.IndicatorA;
-            var indicatorB = comparison.IndicatorB;
-
-            // Compute values for both indicators
-            var valuesA = ComputeIndicatorValues(indicatorA, prices, highs, lows);
-            var valuesB = ComputeIndicatorValues(indicatorB, prices, highs, lows);
-
-            var currA = valuesA.ElementAtOrDefault(currentIndex);
-            var currB = valuesB.ElementAtOrDefault(currentIndex);
-            var prevA = valuesA.ElementAtOrDefault(currentIndex - 1);
-            var prevB = valuesB.ElementAtOrDefault(currentIndex - 1);
+            var valuesA = ComputeIndicatorValues(comparison.IndicatorA, prices, highs, lows);
+            var valuesB = ComputeIndicatorValues(comparison.IndicatorB, prices, highs, lows);
 
             return StrategyEvaluator.EvaluateComparison(
-                comparison.ComparisonType, currA, currB, prevA, prevB, comparison.TargetSignal);
+                comparison.ComparisonType,
+                valuesA.ElementAtOrDefault(currentIndex), valuesB.ElementAtOrDefault(currentIndex),
+                valuesA.ElementAtOrDefault(currentIndex - 1), valuesB.ElementAtOrDefault(currentIndex - 1),
+                comparison.TargetSignal);
         }
 
         private List<decimal?> ComputeIndicatorValues(Indicator indicator, List<decimal> prices, List<decimal> highs, List<decimal> lows)
         {
-            if (indicator.Type == IndicatorType.RSI)
-                return IndicatorCalculator.CalculateRsi(prices, indicator.Period);
-
-            if (indicator.Type == IndicatorType.MACD)
+            switch (indicator.Type)
             {
-                int fastPeriod = indicator.Period > 0 ? indicator.Period : 12;
-                int slowPeriod = (int)(indicator.Threshold > 0 ? indicator.Threshold : 26);
-                var (_, _, hist) = IndicatorCalculator.CalculateMacd(prices, fastPeriod, slowPeriod);
-                return hist;
+                case IndicatorType.RSI:
+                    return IndicatorCalculator.CalculateRsi(prices, indicator.Period);
+                case IndicatorType.MACD:
+                {
+                    int fast = indicator.Period > 0 ? indicator.Period : 12;
+                    int slow = (int)(indicator.Threshold > 0 ? indicator.Threshold : 26);
+                    var (_, _, hist) = IndicatorCalculator.CalculateMacd(prices, fast, slow);
+                    return hist;
+                }
+                case IndicatorType.MovingAverage:
+                    return IndicatorCalculator.CalculateEma(prices, indicator.Period);
+                case IndicatorType.BollingerBands:
+                {
+                    var (_, middle, _) = IndicatorCalculator.CalculateBollingerBands(prices, indicator.Period, indicator.Threshold);
+                    return middle;
+                }
+                case IndicatorType.Stochastic:
+                {
+                    var (kValues, _) = IndicatorCalculator.CalculateStochastic(highs, lows, prices, indicator.Period);
+                    return kValues;
+                }
+                case IndicatorType.ATR:
+                    return IndicatorCalculator.CalculateAtr(highs, lows, prices, indicator.Period);
+                default:
+                    return new List<decimal?>();
             }
-
-            if (indicator.Type == IndicatorType.MovingAverage)
-                return IndicatorCalculator.CalculateEma(prices, indicator.Period);
-
-            if (indicator.Type == IndicatorType.BollingerBands)
-            {
-                var (_, middle, _) = IndicatorCalculator.CalculateBollingerBands(prices, indicator.Period, indicator.Threshold);
-                return middle;
-            }
-
-            if (indicator.Type == IndicatorType.Stochastic)
-            {
-                var (kValues, _) = IndicatorCalculator.CalculateStochastic(highs, lows, prices, indicator.Period);
-                return kValues;
-            }
-
-            if (indicator.Type == IndicatorType.ATR)
-                return IndicatorCalculator.CalculateAtr(highs, lows, prices, indicator.Period);
-
-            return new List<decimal?>();
         }
 
         private decimal CalculatePositionSize(
@@ -350,35 +408,12 @@ namespace CryptoBacktestingDashboard.Services
             List<decimal> prices, List<decimal> highs, List<decimal> lows)
         {
             if (cash <= 0 || entryPrice <= 0) return 0;
-
-            var risk = strategy.RiskManagement;
-            if (risk == null)
-            {
-                // Default: invest all cash (leaving room for commission)
-                var availableCash = Math.Max(0, cash - CommissionPerTrade);
-                return Math.Round(availableCash / entryPrice, 6);
-            }
-
-            switch (risk.Type)
-            {
-                case RiskManagementType.FixedPositionSize:
-                    return risk.Value;
-
-                case RiskManagementType.PercentageRisk:
-                    // Risk Value% of capital: position size = cash * (Value/100)
-                    var riskCapital = cash * (risk.Value / 100m);
-                    var availableRisk = Math.Max(0, riskCapital - CommissionPerTrade);
-                    return Math.Round(availableRisk / entryPrice, 6);
-
-                case RiskManagementType.StopLoss:
-                case RiskManagementType.TakeProfit:
-                case RiskManagementType.TrailingStop:
-                default:
-                    // If risk management is for exit (SL/TP), still need a position size
-                    // Default to full allocation (leaving room for commission)
-                    var available = Math.Max(0, cash - CommissionPerTrade);
-                    return Math.Round(available / entryPrice, 6);
-            }
+            decimal QtyFor(decimal budget) =>
+                Math.Round((budget / (1 + CommissionRate)) / entryPrice, 6, MidpointRounding.ToZero);
+            var pct = strategy.PositionSizePercent.HasValue && strategy.PositionSizePercent.Value > 0
+                ? Math.Min(strategy.PositionSizePercent.Value, 100m)
+                : 100m;
+            return QtyFor(cash * (pct / 100m));
         }
     }
 }

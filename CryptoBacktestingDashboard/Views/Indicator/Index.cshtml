@@ -11,13 +11,11 @@
     </div>
 
     <div style="margin-bottom: 1.5rem;">
-        <a asp-action="Create" class="btn btn-primary"
-               style="padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
+        <a asp-action="Create" class="btn btn-primary" style="padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
             + New Indicator
         </a>
     </div>
 
-    <!-- AntiForgeryToken for AJAX delete POST -->
     @Html.AntiForgeryToken()
 
     <div style="margin-bottom: 2rem; position: relative;">
@@ -32,8 +30,21 @@
 
 @section Scripts {
     <script>
+        var currentQuery = '';
+
+        function loadPage(page) {
+            $.ajax({
+                url: '@Url.Action("Index", "Indicator")',
+                type: 'GET',
+                data: { q: currentQuery, page: page },
+                beforeSend: function () { $('#indicatorListContainer').css('opacity', '0.5'); },
+                success: function (data) {
+                    setTimeout(function () { $('#indicatorListContainer').html(data).css('opacity', '1'); }, 150);
+                }
+            });
+        }
+
         $(document).ready(function () {
-            // Search Input Focus glow
             $('#searchBox').on('focus', function () {
                 $(this).css('border-color', 'var(--rui-blue)');
                 $(this).css('box-shadow', '0 0 0 3px rgba(73, 79, 223, 0.1)');
@@ -42,51 +53,23 @@
                 $(this).css('box-shadow', '0 2px 4px rgba(0,0,0,0.02)');
             });
 
-            // AJAX Search
             var searchTimeout;
             $('#searchBox').on('input', function () {
-                var query = $(this).val();
+                currentQuery = $(this).val();
                 clearTimeout(searchTimeout);
-                
-                // Add debounce to not spam backend
-                searchTimeout = setTimeout(function () {
-                    $.ajax({
-                        url: '@Url.Action("Index", "Indicator")',
-                        type: 'GET',
-                        data: { q: query },
-                        success: function (data) {
-                            $('#indicatorListContainer').css('opacity', '0.5');
-                            setTimeout(function () {
-                                $('#indicatorListContainer').html(data).css('opacity', '1');
-                            }, 150);
-                        }
-                    });
-                }, 300);
+                searchTimeout = setTimeout(function () { loadPage(1); }, 300);
             });
         });
 
-        // AJAX Soft Delete + Animation
         function deleteIndicator(id) {
             if (confirm('Are you sure you want to delete this indicator?')) {
                 $.ajax({
                     url: '@Url.Action("Delete", "Indicator")' + '/' + id,
                     type: 'POST',
-                    headers: {
-                        "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    success: function () {
-                        // Reload the list
-                        $.ajax({
-                            url: '@Url.Action("Index", "Indicator")',
-                            type: 'GET',
-                            success: function (data) {
-                                $('#indicatorListContainer').html(data);
-                            }
-                        });
-                    }
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    success: function () { loadPage(1); }
                 });
             }
         }
     </script>
 }
-</section>

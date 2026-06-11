@@ -21,6 +21,7 @@ namespace CryptoBacktestingDashboard.Repositories.EF
             return await _context.BacktestSessions
                 .Include(s => s.Strategy)
                 .Include(s => s.CryptoPair)
+                .Include(s => s.Results)
                 .ToListAsync();
         }
 

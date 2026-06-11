@@ -19,7 +19,6 @@ namespace CryptoBacktestingDashboard.Repositories.EF
         public async Task<List<BacktestStrategy>> GetItemsAsync()
         {
             return await _context.BacktestStrategies
-                .Include(s => s.RiskManagement)
                 .Include(s => s.Indicators)
                 .Include(s => s.Comparisons)
                     .ThenInclude(c => c.IndicatorA)
@@ -31,7 +30,6 @@ namespace CryptoBacktestingDashboard.Repositories.EF
         public async Task<BacktestStrategy?> GetItemAsync(int id)
         {
             return await _context.BacktestStrategies
-                .Include(s => s.RiskManagement)
                 .Include(s => s.Indicators)
                 .Include(s => s.Comparisons)
                     .ThenInclude(c => c.IndicatorA)

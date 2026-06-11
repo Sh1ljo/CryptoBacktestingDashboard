@@ -1,0 +1,113 @@
+@model List<CryptoBacktestingDashboard.Models.Crypto.BacktestStrategy>
+@using CryptoBacktestingDashboard.Models.Crypto
+@{
+    var _curPage = (int?)ViewData["CurrentPage"] ?? 0;
+    var _totPages = (int?)ViewData["TotalPages"] ?? 0;
+    var _totCount = (int?)ViewData["TotalCount"] ?? 0;
+}
+
+@if (Model != null && Model.Count > 0)
+{
+    <div class="grid grid-2">
+        @foreach (var strategy in Model)
+        {
+            <div class="card" style="cursor: pointer;"
+                 onclick="window.location.href='@Url.Action("Details", "BacktestStrategy", new { id = strategy.Id })'">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                    <div style="flex: 1;">
+                        <h5 class="card-title">@strategy.Name</h5>
+                    </div>
+                    <div style="display: flex; gap: 0.4rem; align-items: center;">
+                        @switch (strategy.TradeDirection)
+                        {
+                            case TradeDirection.LongOnly:
+                                <span class="badge" style="background: #e6f7f3; color: #00a87e; font-size: 11px;">▲ Long</span>
+                                break;
+                            case TradeDirection.ShortOnly:
+                                <span class="badge" style="background: #fdecea; color: #e23b4a; font-size: 11px;">▼ Short</span>
+                                break;
+                            case TradeDirection.Both:
+                                <span class="badge" style="background: #eeeffe; color: #494fdf; font-size: 11px;">▲▼ Both</span>
+                                break;
+                        }
+                        <span class="badge @(strategy.IsActive ? "badge-success" : "badge-inactive")">
+                            @(strategy.IsActive ? "Active" : "Inactive")
+                        </span>
+                    </div>
+                </div>
+
+                <p style="color: #505a63; margin-bottom: 1.5rem; min-height: 60px;">
+                    @strategy.Description
+                </p>
+
+                <div style="border-bottom: 1px solid #c9c9cd; padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                    <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.5rem; text-transform: uppercase;">Initial Capital</p>
+                    <p style="font-size: 20px; color: #191c1f; font-weight: 600; margin: 0;">
+                        $@strategy.InitialCapital.ToString("F0")
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.5rem; text-transform: uppercase;">Technical Indicators</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        @foreach (var indicator in strategy.Indicators ?? new List<CryptoBacktestingDashboard.Models.Crypto.Indicator>())
+                        {
+                            <span style="background: #f4f4f4; color: #191c1f; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 12px;">
+                                @indicator.Type
+                            </span>
+                        }
+                        @if ((strategy.Indicators?.Count ?? 0) == 0)
+                        {
+                            <span style="color: #8d969e; font-size: 12px;">No indicators configured</span>
+                        }
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #c9c9cd;">
+                    <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.3rem; text-transform: uppercase;">Lookback Period</p>
+                    <p style="color: #505a63; margin: 0; font-size: 14px;">@strategy.LookbackPeriod candles</p>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.3rem; text-transform: uppercase;">Risk Management</p>
+                    <p style="color: #505a63; margin: 0; font-size: 14px;">
+                        SL @strategy.StopLossPercent.ToString("0.##")% / TP @strategy.TakeProfitPercent.ToString("0.##")%
+                        @(strategy.TrailingStopPercent.HasValue ? " / Trail " + strategy.TrailingStopPercent.Value.ToString("0.##") + "%" : "")
+                        &nbsp;(R:R @strategy.RiskRewardRatio.ToString("0.##"))
+                    </p>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem;">
+                    <a asp-action="Edit" asp-route-id="@strategy.Id" class="btn btn-outlined"
+                       style="flex: 1; text-align: center;" onclick="event.stopPropagation();">Edit</a>
+                    <form asp-action="Delete" asp-route-id="@strategy.Id" method="post" style="flex: 1;"
+                          onclick="event.stopPropagation();">
+                        @Html.AntiForgeryToken()
+                        <button type="button" class="btn btn-outlined delete-btn" data-id="@strategy.Id"
+                                style="width: 100%; color: #dc3545;"
+                                onclick="event.stopPropagation(); deleteStrategy(@strategy.Id)">Delete</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (_totPages > 1)
+    {
+        <div class="pagination">
+            <button class="pagination-btn" onclick="loadPage(@(_curPage - 1))" @(_curPage <= 1 ? "disabled" : "")>←</button>
+            @for (var p = 1; p <= _totPages; p++)
+            {
+                <button class="pagination-btn @(p == _curPage ? "active" : "")" onclick="loadPage(@p)">@p</button>
+            }
+            <button class="pagination-btn" onclick="loadPage(@(_curPage + 1))" @(_curPage >= _totPages ? "disabled" : "")>→</button>
+            <span class="pagination-info">@_totCount total</span>
+        </div>
+    }
+}
+else
+{
+    <div class="card" style="text-align: center; padding: 3rem;">
+        <p style="color: #8d969e; font-size: 18px;">No strategies found.</p>
+    </div>
+}

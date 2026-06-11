@@ -1,4 +1,4 @@
-﻿using CryptoBacktestingDashboard.Data;
+using CryptoBacktestingDashboard.Data;
 using CryptoBacktestingDashboard.Repositories;
 using CryptoBacktestingDashboard.Repositories.EF;
 using CryptoBacktestingDashboard.Services;
@@ -9,19 +9,36 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 
+using CryptoBacktestingDashboard.Models;
+using Microsoft.AspNetCore.Identity;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddDefaultIdentity<AppUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = false;
+    })
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>();
+
+builder.Services.AddAuthentication()
+    .AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? "dummy-client-id";
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? "dummy-client-secret";
+    });
+
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 builder.Services.AddScoped<BacktestSessionRepository>();
 builder.Services.AddScoped<BacktestStrategyRepository>();
 builder.Services.AddScoped<CryptoPairRepository>();
 builder.Services.AddScoped<IndicatorRepository>();
 builder.Services.AddScoped<IndicatorComparisonRepository>();
-builder.Services.AddScoped<RiskManagementRepository>();
 builder.Services.AddScoped<CandleDataRepository>();
 builder.Services.AddScoped<BacktestResultRepository>();
 
@@ -52,10 +69,9 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+    app.UseHttpsRedirection();
 }
 
-
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
@@ -63,5 +79,8 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+app.MapRazorPages();
 
 app.Run();
+
+public partial class Program { }

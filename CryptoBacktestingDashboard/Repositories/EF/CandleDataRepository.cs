@@ -66,6 +66,19 @@ namespace CryptoBacktestingDashboard.Repositories.EF
                 .ToListAsync();
         }
 
+        public async Task<int> CountByPairIdAsync(int pairId)
+        {
+            return await _context.CandleData.CountAsync(c => c.CryptoPairId == pairId);
+        }
+
+        public async Task<(DateTime? Earliest, DateTime? Latest)> GetDateRangeByPairIdAsync(int pairId)
+        {
+            var times = _context.CandleData.Where(c => c.CryptoPairId == pairId);
+            if (!await times.AnyAsync())
+                return (null, null);
+            return (await times.MinAsync(c => c.OpenTime), await times.MaxAsync(c => c.OpenTime));
+        }
+
         public async Task DeleteByPairIdAsync(int pairId)
         {
             var candles = await _context.CandleData

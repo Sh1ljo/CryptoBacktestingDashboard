@@ -9,22 +9,22 @@
 
 <!-- Custom Datepicker Container -->
 <div class="form-group position-relative">
-    <label class="control-label">@(ViewData["Label"] ?? propertyName)</label>
-    
+    <label class="form-label">@(ViewData["Label"] ?? propertyName)</label>
+
     <div class="input-group">
-        <input type="text" 
-               id="@(controlId)_display" 
-               class="form-control datepicker-display" 
-               placeholder="Select Date" 
-               value="@(Model?.ToString(displayFormat))" 
+        <input type="text"
+               id="@(controlId)_display"
+               class="form-control datepicker-display"
+               placeholder="Select Date"
+               value="@(Model?.ToString(displayFormat))"
                autocomplete="off" />
                
         <!-- Real bounding input for form submit -->
-        <input type="hidden" 
-               id="@controlId"
-               name="@propertyName" 
-               class="datepicker-hidden"
-               value="@(Model?.ToString("yyyy-MM-ddTHH:mm:ss"))" />
+         <input type="hidden"
+             id="@controlId"
+             name="@propertyName"
+             class="datepicker-hidden"
+             value="@(Model?.ToString("yyyy-MM-ddTHH:mm:ss"))" />
     </div>
     
     <span class="text-danger field-validation-valid" data-valmsg-for="@propertyName" data-valmsg-replace="true"></span>

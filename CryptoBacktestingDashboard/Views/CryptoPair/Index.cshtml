@@ -11,8 +11,7 @@
     </div>
 
     <div style="margin-bottom: 1.5rem;">
-        <a asp-action="Create" class="btn btn-primary"
-               style="padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
+        <a asp-action="Create" class="btn btn-primary" style="padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
             + New Pair
         </a>
     </div>
@@ -22,7 +21,6 @@
                style="width: 100%; max-width: 100%; padding: 1rem 1.5rem; font-size: 1rem; border-radius: 12px; border: 1px solid var(--rui-gray-tone); background: var(--rui-white); box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" />
     </div>
 
-    <!-- AntiForgeryToken for AJAX delete POST -->
     @Html.AntiForgeryToken()
 
     <div id="pairListContainer">
@@ -32,8 +30,21 @@
 
 @section Scripts {
     <script>
+        var currentQuery = '';
+
+        function loadPage(page) {
+            $.ajax({
+                url: '@Url.Action("Index", "CryptoPair")',
+                type: 'GET',
+                data: { q: currentQuery, page: page },
+                beforeSend: function () { $('#pairListContainer').css('opacity', '0.5'); },
+                success: function (data) {
+                    setTimeout(function () { $('#pairListContainer').html(data).css('opacity', '1'); }, 150);
+                }
+            });
+        }
+
         $(document).ready(function () {
-            // Search Input Focus glow
             $('#searchBox').on('focus', function () {
                 $(this).css('border-color', 'var(--rui-blue)');
                 $(this).css('box-shadow', '0 0 0 3px rgba(73, 79, 223, 0.1)');
@@ -42,48 +53,21 @@
                 $(this).css('box-shadow', '0 2px 4px rgba(0,0,0,0.02)');
             });
 
-            // AJAX Search
             var searchTimeout;
             $('#searchBox').on('input', function () {
-                var query = $(this).val();
+                currentQuery = $(this).val();
                 clearTimeout(searchTimeout);
-                
-                // Add debounce to not spam backend
-                searchTimeout = setTimeout(function () {
-                    $.ajax({
-                        url: '@Url.Action("Index", "CryptoPair")',
-                        type: 'GET',
-                        data: { q: query },
-                        success: function (data) {
-                            $('#pairListContainer').css('opacity', '0.5');
-                            setTimeout(function () {
-                                $('#pairListContainer').html(data).css('opacity', '1');
-                            }, 150);
-                        }
-                    });
-                }, 300);
+                searchTimeout = setTimeout(function () { loadPage(1); }, 300);
             });
         });
 
-        // AJAX Soft Delete + Animation
         function deletePair(id) {
             if (confirm('Are you sure you want to delete this pair?')) {
                 $.ajax({
                     url: '@Url.Action("Delete", "CryptoPair")' + '/' + id,
                     type: 'POST',
-                    headers: {
-                        "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    success: function () {
-                        // Reload the list
-                        $.ajax({
-                            url: '@Url.Action("Index", "CryptoPair")',
-                            type: 'GET',
-                            success: function (data) {
-                                $('#pairListContainer').html(data);
-                            }
-                        });
-                    }
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    success: function () { loadPage(1); }
                 });
             }
         }

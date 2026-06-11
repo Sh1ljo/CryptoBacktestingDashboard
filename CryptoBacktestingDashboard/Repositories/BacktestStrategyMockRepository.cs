@@ -8,16 +8,12 @@ namespace CryptoBacktestingDashboard.Repositories
     public class BacktestStrategyMockRepository
     {
         private readonly IndicatorMockRepository _indicatorRepo;
-        private readonly RiskManagementMockRepository _riskMgmtRepo;
 
         private static readonly List<BacktestStrategy> _strategies = new();
 
-        public BacktestStrategyMockRepository(
-            IndicatorMockRepository indicatorRepo,
-            RiskManagementMockRepository riskMgmtRepo)
+        public BacktestStrategyMockRepository(IndicatorMockRepository indicatorRepo)
         {
             _indicatorRepo = indicatorRepo;
-            _riskMgmtRepo = riskMgmtRepo;
             InitializeStrategies();
         }
 
@@ -31,9 +27,6 @@ namespace CryptoBacktestingDashboard.Repositories
             var maIndicator = _indicatorRepo.GetById(3);
             var stochastic = _indicatorRepo.GetById(5);
 
-            var conservativeRisk = _riskMgmtRepo.GetById(1);
-            var moderateRisk = _riskMgmtRepo.GetById(2);
-
             _strategies.Add(new BacktestStrategy
             {
                 Id = 1,
@@ -43,8 +36,8 @@ namespace CryptoBacktestingDashboard.Repositories
                 InitialCapital = 10000m,
                 LookbackPeriod = 50,
                 CreatedAt = new DateTime(2025, 01, 01),
-                RiskManagementId = conservativeRisk.Id,
-                RiskManagement = conservativeRisk,
+                StopLossPercent = 5m,
+                TakeProfitPercent = 10m,
                 Indicators = new List<Indicator> { rsiIndicator },
                 BacktestSessions = new List<BacktestSession>()
             });
@@ -58,8 +51,9 @@ namespace CryptoBacktestingDashboard.Repositories
                 InitialCapital = 15000m,
                 LookbackPeriod = 100,
                 CreatedAt = new DateTime(2025, 01, 02),
-                RiskManagementId = moderateRisk.Id,
-                RiskManagement = moderateRisk,
+                StopLossPercent = 8m,
+                TakeProfitPercent = 16m,
+                TrailingStopPercent = 8m,
                 Indicators = new List<Indicator> { macdIndicator, maIndicator },
                 BacktestSessions = new List<BacktestSession>()
             });
@@ -73,8 +67,8 @@ namespace CryptoBacktestingDashboard.Repositories
                 InitialCapital = 20000m,
                 LookbackPeriod = 75,
                 CreatedAt = new DateTime(2025, 01, 05),
-                RiskManagementId = moderateRisk.Id,
-                RiskManagement = moderateRisk,
+                StopLossPercent = 6m,
+                TakeProfitPercent = 12m,
                 Indicators = new List<Indicator> { rsiIndicator, stochastic, macdIndicator },
                 BacktestSessions = new List<BacktestSession>()
             });
@@ -88,8 +82,9 @@ namespace CryptoBacktestingDashboard.Repositories
                 InitialCapital = 5000m,
                 LookbackPeriod = 200,
                 CreatedAt = new DateTime(2025, 01, 08),
-                RiskManagementId = conservativeRisk.Id,
-                RiskManagement = conservativeRisk,
+                StopLossPercent = 8m,
+                TakeProfitPercent = 16m,
+                TrailingStopPercent = 8m,
                 Indicators = new List<Indicator> { maIndicator },
                 BacktestSessions = new List<BacktestSession>()
             });

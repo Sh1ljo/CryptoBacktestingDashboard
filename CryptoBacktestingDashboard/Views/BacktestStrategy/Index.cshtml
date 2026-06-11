@@ -16,77 +16,60 @@
         </a>
     </div>
 
-    @if (Model != null && Model.Count > 0)
-    {
-        <div class="grid grid-2">
-            @foreach (var strategy in Model)
-            {
-                <div class="card" style="cursor: pointer;" onclick="window.location.href='@Url.Action("Details", "BacktestStrategy", new { id = strategy.Id })'">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
-                        <div style="flex: 1;">
-                            <h5 class="card-title">@strategy.Name</h5>
-                        </div>
-                        <span class="badge @(strategy.IsActive ? "badge-success" : "badge-inactive")">
-                            @(strategy.IsActive ? "Active" : "Inactive")
-                        </span>
-                    </div>
+    <div style="margin-bottom: 2rem; position: relative;">
+        <input type="text" id="searchBox" class="form-control" placeholder="Search strategies by name or description..."
+               style="width: 100%; max-width: 100%; padding: 1rem 1.5rem; font-size: 1rem; border-radius: 12px; border: 1px solid var(--rui-gray-tone); background: var(--rui-white); box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;" />
+    </div>
 
-                    <p style="color: #505a63; margin-bottom: 1.5rem; min-height: 60px;">
-                        @strategy.Description
-                    </p>
+    @Html.AntiForgeryToken()
 
-                    <div style="border-bottom: 1px solid #c9c9cd; padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
-                        <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.5rem; text-transform: uppercase;">Initial Capital</p>
-                        <p style="font-size: 20px; color: #191c1f; font-weight: 600; margin: 0;">
-                            $@strategy.InitialCapital.ToString("F0")
-                        </p>
-                    </div>
-
-                    <div style="margin-bottom: 1.5rem;">
-                        <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.5rem; text-transform: uppercase;">Technical Indicators</p>
-                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                            @foreach (var indicator in strategy.Indicators ?? new List<Indicator>())
-                            {
-                                <span style="background: #f4f4f4; color: #191c1f; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 12px;">
-                                    @indicator.Type
-                                </span>
-                            }
-                            @if ((strategy.Indicators?.Count ?? 0) == 0)
-                            {
-                                <span style="color: #8d969e; font-size: 12px;">No indicators configured</span>
-                            }
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #c9c9cd;">
-                        <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.3rem; text-transform: uppercase;">Lookback Period</p>
-                        <p style="color: #505a63; margin: 0; font-size: 14px;">
-                            @strategy.LookbackPeriod candles
-                        </p>
-                    </div>
-
-                    <div style="margin-bottom: 1.5rem;">
-                        <p style="font-size: 12px; color: #8d969e; margin-bottom: 0.3rem; text-transform: uppercase;">Risk Management</p>
-                        <p style="color: #505a63; margin: 0; font-size: 14px;">
-                            @(strategy.RiskManagement?.Name ?? "Not configured")
-                        </p>
-                    </div>
-
-                    <div style="display: flex; gap: 0.5rem;">
-                        <a asp-action="Edit" asp-route-id="@strategy.Id" class="btn btn-outlined" style="flex: 1; text-align: center;" onclick="event.stopPropagation();">Edit</a>
-                        <form asp-action="Delete" asp-route-id="@strategy.Id" method="post" style="flex: 1;" onclick="event.stopPropagation();">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-outlined" style="width: 100%; color: #dc3545;" onclick="return confirm('Are you sure you want to delete this strategy?')">Delete</button>
-                        </form>
-                    </div>
-                </div>
-            }
-        </div>
-    }
-    else
-    {
-        <div class="card" style="text-align: center; padding: 3rem;">
-            <p style="color: #8d969e; font-size: 18px;">No strategies yet. <a asp-action="Create">Create your first trading strategy!</a></p>
-        </div>
-    }
+    <div id="strategyListContainer">
+        <partial name="_StrategyListPartial" model="Model" />
+    </div>
 </section>
+
+@section Scripts {
+    <script>
+        var currentQuery = '';
+
+        function loadPage(page) {
+            $.ajax({
+                url: '@Url.Action("Index", "BacktestStrategy")',
+                type: 'GET',
+                data: { q: currentQuery, page: page },
+                beforeSend: function () { $('#strategyListContainer').css('opacity', '0.5'); },
+                success: function (data) {
+                    setTimeout(function () { $('#strategyListContainer').html(data).css('opacity', '1'); }, 150);
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            $('#searchBox').on('focus', function () {
+                $(this).css('border-color', 'var(--rui-blue)');
+                $(this).css('box-shadow', '0 0 0 3px rgba(73, 79, 223, 0.1)');
+            }).on('blur', function () {
+                $(this).css('border-color', 'var(--rui-gray-tone)');
+                $(this).css('box-shadow', '0 2px 4px rgba(0,0,0,0.02)');
+            });
+
+            var searchTimeout;
+            $('#searchBox').on('input', function () {
+                currentQuery = $(this).val();
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function () { loadPage(1); }, 300);
+            });
+        });
+
+        function deleteStrategy(id) {
+            if (confirm('Are you sure you want to delete this strategy?')) {
+                $.ajax({
+                    url: '@Url.Action("Delete", "BacktestStrategy")' + '/' + id,
+                    type: 'POST',
+                    headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                    success: function () { loadPage(1); }
+                });
+            }
+        }
+    </script>
+}

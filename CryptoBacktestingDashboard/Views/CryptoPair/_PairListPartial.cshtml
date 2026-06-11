@@ -2,6 +2,9 @@
 
 @{
     var priceChanges = ViewData["PriceChanges"] as Dictionary<int, decimal?>;
+    var _curPage = (int?)ViewData["CurrentPage"] ?? 0;
+    var _totPages = (int?)ViewData["TotalPages"] ?? 0;
+    var _totCount = (int?)ViewData["TotalCount"] ?? 0;
 }
 
 @if (Model != null && Model.Count > 0)
@@ -66,6 +69,19 @@
             </div>
         }
     </div>
+
+    @if (_totPages > 1)
+    {
+        <div class="pagination">
+            <button class="pagination-btn" onclick="loadPage(@(_curPage - 1))" @(_curPage <= 1 ? "disabled" : "")>←</button>
+            @for (var p = 1; p <= _totPages; p++)
+            {
+                <button class="pagination-btn @(p == _curPage ? "active" : "")" onclick="loadPage(@p)">@p</button>
+            }
+            <button class="pagination-btn" onclick="loadPage(@(_curPage + 1))" @(_curPage >= _totPages ? "disabled" : "")>→</button>
+            <span class="pagination-info">@_totCount total</span>
+        </div>
+    }
 }
 else
 {

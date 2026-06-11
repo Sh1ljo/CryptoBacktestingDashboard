@@ -22,7 +22,7 @@ namespace CryptoBacktestingDashboard.Controllers
         }
 
         [HttpGet("")]
-        public async Task<IActionResult> Index(string? q = null)
+        public async Task<IActionResult> Index(string? q = null, int page = 1, int pageSize = 9)
         {
             var pairs = await _pairRepository.GetItemsAsync();
             if (!string.IsNullOrEmpty(q))
@@ -30,8 +30,12 @@ namespace CryptoBacktestingDashboard.Controllers
                 pairs = pairs.Where(p => p.Symbol?.Contains(q, System.StringComparison.OrdinalIgnoreCase) ?? false).ToList();
             }
 
-            // Calculate price change percentages for each pair
-            var priceChanges = new Dictionary<int, decimal?>(); // pair ID -> price change %
+            var totalCount = pairs.Count;
+            var totalPages = (int)System.Math.Ceiling(totalCount / (double)pageSize);
+            page = System.Math.Max(1, System.Math.Min(page, System.Math.Max(1, totalPages)));
+            pairs = pairs.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            var priceChanges = new Dictionary<int, decimal?>();
             foreach (var pair in pairs)
             {
                 var change = await _marketDataService.GetPriceChangePercentageAsync(pair.Id);
@@ -39,6 +43,10 @@ namespace CryptoBacktestingDashboard.Controllers
             }
 
             ViewData["PriceChanges"] = priceChanges;
+            ViewData["CurrentPage"] = page;
+            ViewData["TotalPages"] = totalPages;
+            ViewData["TotalCount"] = totalCount;
+            ViewData["Query"] = q;
 
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
@@ -74,6 +82,39 @@ namespace CryptoBacktestingDashboard.Controllers
                 .ToList();
 
             return Json(results);
+        }
+
+        [HttpGet("{id}/candles")]
+        public async Task<IActionResult> Candles(int id, DateTime? from = null, DateTime? to = null)
+        {
+            var effectiveFrom = from ?? DateTime.Today.AddYears(-2);
+            var effectiveTo = to ?? DateTime.Today;
+            var candles = await _candleDataRepository.GetByPairIdAndDateRangeAsync(id, effectiveFrom, effectiveTo);
+            var data = candles.Select(c => new
+            {
+                time = c.OpenTime.ToString("yyyy-MM-dd"),
+                open = c.Open,
+                high = c.High,
+                low = c.Low,
+                close = c.Close
+            });
+            return Json(data);
+        }
+
+        // Lightweight JSON endpoint so forms can warn when a pair has no candle data
+        // before the user wastes a run that would fail with "not enough candle data".
+        [HttpGet("{id}/data-status")]
+        public async Task<IActionResult> DataStatus(int id)
+        {
+            var count = await _candleDataRepository.CountByPairIdAsync(id);
+            var (earliest, latest) = await _candleDataRepository.GetDateRangeByPairIdAsync(id);
+            return Json(new
+            {
+                count,
+                hasData = count > 0,
+                earliest = earliest?.ToString("yyyy-MM-dd"),
+                latest = latest?.ToString("yyyy-MM-dd")
+            });
         }
 
         [HttpPost("{id}/fetch-data")]

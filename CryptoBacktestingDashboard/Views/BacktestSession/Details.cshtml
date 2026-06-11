@@ -5,15 +5,53 @@
     var profit = Model.GetProfit();
     var roi = Model.GetROI();
     var profitColor = profit >= 0 ? "#00a87e" : "#e23b4a";
-    var winRate = Model.Results.Count > 0 
-        ? (Model.Results.Count(r => r.IsWinningTrade) * 100 / Model.Results.Count) 
+    var winRate = Model.Results.Count > 0
+        ? (Model.Results.Count(r => r.IsWinningTrade) * 100 / Model.Results.Count)
         : 0;
-    var avgWin = Model.Results.Where(r => r.IsWinningTrade).Any() 
-        ? Model.Results.Where(r => r.IsWinningTrade).Average(r => r.GetProfit()) 
-        : 0;
-    var avgLoss = Model.Results.Where(r => !r.IsWinningTrade).Any() 
-        ? Model.Results.Where(r => !r.IsWinningTrade).Average(r => r.GetProfit()) 
-        : 0;
+
+    var orderedResults = Model.Results.OrderBy(r => r.ExitTime).ToList();
+
+    // Equity curve data
+    var equityLabels = new List<string> { Model.StartDate.ToString("MMM dd, yyyy") };
+    var equityValues = new List<decimal> { Model.InitialBalance };
+    var runningBalance = Model.InitialBalance;
+    foreach (var r in orderedResults)
+    {
+        runningBalance += r.GetProfit();
+        equityLabels.Add(r.ExitTime.ToString("MMM dd, yyyy"));
+        equityValues.Add(Math.Round(runningBalance, 2));
+    }
+
+    // Drawdown data
+    var drawdownLabels = new List<string> { Model.StartDate.ToString("MMM dd, yyyy") };
+    var drawdownValues = new List<decimal> { 0m };
+    var peakBalance = Model.InitialBalance;
+    var ddRunning = Model.InitialBalance;
+    foreach (var r in orderedResults)
+    {
+        ddRunning += r.GetProfit();
+        if (ddRunning > peakBalance) peakBalance = ddRunning;
+        var dd = peakBalance > 0 ? Math.Round((ddRunning - peakBalance) / peakBalance * 100m, 2) : 0m;
+        drawdownLabels.Add(r.ExitTime.ToString("MMM dd, yyyy"));
+        drawdownValues.Add(dd);
+    }
+    var maxDrawdown = drawdownValues.Min(); // most negative value
+
+    // Monthly returns heatmap
+    var monthlyPnL = orderedResults
+        .GroupBy(r => new { r.ExitTime.Year, r.ExitTime.Month })
+        .ToDictionary(g => (g.Key.Year, g.Key.Month), g => g.Sum(rr => rr.GetProfit()));
+    var heatmapYears = monthlyPnL.Keys.Select(k => k.Year).Distinct().OrderBy(y => y).ToList();
+    var monthNames = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    var maxAbsPnL = monthlyPnL.Any() ? monthlyPnL.Values.Select(v => Math.Abs(v)).Max() : 1m;
+    if (maxAbsPnL == 0) maxAbsPnL = 1m;
+
+    // Trade markers for candlestick chart
+    var tradeMarkers = orderedResults.SelectMany(r => new[]
+    {
+        new { time = r.EntryTime.ToString("yyyy-MM-dd"), position = "belowBar", color = "#00a87e", shape = "arrowUp", text = "Buy" },
+        new { time = r.ExitTime.ToString("yyyy-MM-dd"), position = "aboveBar", color = "#e23b4a", shape = "arrowDown", text = "Sell" }
+    }).ToList();
 }
 
 <nav class="breadcrumbs">
@@ -22,19 +60,6 @@
     <span>@Model.Strategy?.Name @Model.CryptoPair?.Symbol</span>
 </nav>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success" style="padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-        @TempData["SuccessMessage"]
-    </div>
-}
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger" style="padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-        @TempData["ErrorMessage"]
-    </div>
-}
-
 <section>
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
         <div>
@@ -42,9 +67,9 @@
             <p style="font-size: 20px; color: #505a63; margin-bottom: 1rem;">@Model.CryptoPair?.Symbol</p>
         </div>
         <div style="display: flex; gap: 0.75rem; align-items: center;">
-            <form asp-action="Run" asp-route-id="@Model.Id" method="post">
+            <form id="runForm" asp-action="Run" asp-route-id="@Model.Id" method="post">
                 @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
+                <button id="runBtn" type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
                     ▶ Run Backtest
                 </button>
             </form>
@@ -61,16 +86,14 @@
         <div class="card" style="text-align: center; padding: 2rem;">
             <div class="metric">
                 <div class="metric-value" style="color: @profitColor;">
-                    $@Math.Abs(profit).ToString("F2")
+                    @(profit < 0 ? "-$" : "$")@Math.Abs(profit).ToString("F2")
                 </div>
                 <div class="metric-label">Profit/Loss</div>
             </div>
         </div>
         <div class="card" style="text-align: center; padding: 2rem;">
             <div class="metric">
-                <div class="metric-value" style="color: @profitColor;">
-                    @roi.ToString("F2")%
-                </div>
+                <div class="metric-value" style="color: @profitColor;">@roi.ToString("F2")%</div>
                 <div class="metric-label">ROI</div>
             </div>
         </div>
@@ -96,22 +119,17 @@
             <h6>Duration</h6>
             <p style="color: #505a63; margin: 0.5rem 0 1rem 0;">
                 @Model.StartDate.ToString("MMM dd, yyyy") to @Model.EndDate.ToString("MMM dd, yyyy")
-                <br />
-                <strong>@((Model.EndDate - Model.StartDate).Days) days</strong>
+                <br /><strong>@((Model.EndDate - Model.StartDate).Days) days</strong>
             </p>
-
             <h6>Capital</h6>
             <p style="color: #505a63; margin: 0.5rem 0 0 0;">
                 Starting: <strong>$@Model.InitialBalance.ToString("F2")</strong><br />
                 Final: <strong style="color: @profitColor;">$@Model.FinalBalance.ToString("F2")</strong>
             </p>
         </div>
-
         <div class="card">
             <h6>Strategy Details</h6>
-            <p style="color: #505a63; margin: 0.5rem 0 1rem 0;">
-                @Model.Strategy?.Description
-            </p>
+            <p style="color: #505a63; margin: 0.5rem 0 1rem 0;">@Model.Strategy?.Description</p>
             <p style="margin: 0.5rem 0; color: #505a63;">
                 <strong>Lookback Period:</strong> @Model.Strategy?.LookbackPeriod candles
             </p>
@@ -121,6 +139,89 @@
 
 @if (Model.Results != null && Model.Results.Count > 0)
 {
+    <section>
+        <h3>Equity Curve</h3>
+        <div class="card chart-card">
+            <div style="position: relative; height: 260px;">
+                <canvas id="equityChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h3>Price Chart &amp; Trades</h3>
+        <div class="card chart-card">
+            <div id="priceChart" style="height: 360px;"></div>
+            <p id="priceChartMsg" style="text-align:center; color:#8d969e; font-size:12px; margin-top:0.5rem; display:none;">
+                No candle data available for this pair in the selected date range.
+            </p>
+        </div>
+    </section>
+
+    <section>
+        <h3>Drawdown Curve</h3>
+        <div class="card chart-card">
+            <div style="position: relative; height: 200px;">
+                <canvas id="drawdownChart"></canvas>
+            </div>
+            <p style="text-align:right; font-size:11px; color:#8d969e; margin-top:0.5rem;">
+                Max drawdown: <strong style="color:#e23b4a;">@maxDrawdown.ToString("F2")%</strong>
+            </p>
+        </div>
+    </section>
+
+    @if (heatmapYears.Count > 0)
+    {
+        <section>
+            <h3>Monthly Returns</h3>
+            <div class="card" style="padding: 1.5rem; overflow-x: auto;">
+                <table class="heatmap-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left; padding-left:0.75rem;">Year</th>
+                            @foreach (var mn in monthNames)
+                            {
+                                <th>@mn</th>
+                            }
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var year in heatmapYears)
+                        {
+                            var yearTotal = monthlyPnL.Where(kv => kv.Key.Year == year).Sum(kv => kv.Value);
+                            var yearColor = yearTotal >= 0 ? "rgba(0,168,126," : "rgba(226,59,74,";
+                            var yearIntensity = (double)(Math.Min(Math.Abs(yearTotal) / maxAbsPnL, 1m) * 0.7m + 0.15m);
+                            <tr>
+                                <td class="year-label">@year</td>
+                                @for (int m = 1; m <= 12; m++)
+                                {
+                                    var key = (year, m);
+                                    if (monthlyPnL.ContainsKey(key))
+                                    {
+                                        var pnl = monthlyPnL[key];
+                                        var bgColor = pnl >= 0 ? "rgba(0,168,126," : "rgba(226,59,74,";
+                                        var intensity = (double)(Math.Min(Math.Abs(pnl) / maxAbsPnL, 1m) * 0.7m + 0.15m);
+                                        <td style="background:@(bgColor + intensity.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + ")"); color: var(--rui-dark);">
+                                            @(pnl >= 0 ? "+" : "")@pnl.ToString("F0")
+                                        </td>
+                                    }
+                                    else
+                                    {
+                                        <td style="color:#8d969e;">—</td>
+                                    }
+                                }
+                                <td style="background:@(yearColor + yearIntensity.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + ")"); color: var(--rui-dark); font-weight:700;">
+                                    @(yearTotal >= 0 ? "+" : "")@yearTotal.ToString("F0")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+
     <section>
         <h3>Trade Results</h3>
         <table>
@@ -142,7 +243,6 @@
                     var tradeProfitPercent = result.GetProfitPercent();
                     var tradeProfitColor = tradeProfit >= 0 ? "#00a87e" : "#e23b4a";
                     var duration = (result.ExitTime - result.EntryTime).TotalDays;
-
                     <tr>
                         <td>@result.Id</td>
                         <td>
@@ -152,15 +252,15 @@
                         </td>
                         <td>
                             $@result.EntryPrice.ToString("F2")<br />
-                            <small style="color: #8d969e;">@result.EntryTime.ToString("MMM dd")</small>
+                            <small style="color: #8d969e;">@result.EntryTime.ToString("MMM dd, yyyy")</small>
                         </td>
                         <td>
                             $@result.ExitPrice.ToString("F2")<br />
-                            <small style="color: #8d969e;">@result.ExitTime.ToString("MMM dd")</small>
+                            <small style="color: #8d969e;">@result.ExitTime.ToString("MMM dd, yyyy")</small>
                         </td>
                         <td>@duration.ToString("F1") days</td>
                         <td style="color: @tradeProfitColor; font-weight: bold;">
-                            $@Math.Abs(tradeProfit).ToString("F2") (@tradeProfitPercent.ToString("+0.00;-0.00;0")%)
+                            @(tradeProfit < 0 ? "-$" : "$")@Math.Abs(tradeProfit).ToString("F2") (@tradeProfitPercent.ToString("+0.00;-0.00;0")%)
                         </td>
                         <td>
                             <span class="badge @(result.IsWinningTrade ? "badge-success" : "badge-danger")">
@@ -178,3 +278,163 @@
     <a asp-action="Index" class="btn btn-outlined">← Back to Sessions</a>
     <a asp-controller="BacktestStrategy" asp-action="Details" asp-route-id="@Model.StrategyId" class="btn btn-secondary">View Strategy</a>
 </section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var form = document.getElementById('runForm');
+            var btn = document.getElementById('runBtn');
+            if (form && btn) {
+                form.addEventListener('submit', function () {
+                    btn.disabled = true;
+                    btn.textContent = '⏳ Running…';
+                });
+            }
+        })();
+    </script>
+
+    @if (Model.Results != null && Model.Results.Count > 0)
+    {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+        <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+        <script>
+            (function () {
+                var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                var textColor = isDark ? '#a0abb5' : '#505a63';
+                var gridColor = isDark ? '#2e343c' : '#e8eaed';
+
+                // ── Equity Curve ──────────────────────────────────────────────
+                (function () {
+                    var canvas = document.getElementById('equityChart');
+                    if (!canvas || typeof Chart === 'undefined') return;
+                    var labels = @Json.Serialize(equityLabels);
+                    var values = @Json.Serialize(equityValues);
+                    var positive = values[values.length - 1] >= values[0];
+                    var line = positive ? '#00a87e' : '#e23b4a';
+                    new Chart(canvas.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Account balance ($)',
+                                data: values,
+                                borderColor: line,
+                                backgroundColor: line + '22',
+                                fill: true,
+                                tension: 0.2,
+                                pointRadius: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: {
+                                    ticks: { color: textColor, callback: function (v) { return '$' + v.toLocaleString(); } },
+                                    grid: { color: gridColor }
+                                },
+                                x: { ticks: { color: textColor }, grid: { color: gridColor } }
+                            }
+                        }
+                    });
+                })();
+
+                // ── Price Chart + Trade Markers ────────────────────────────────
+                (function () {
+                    var container = document.getElementById('priceChart');
+                    if (!container || typeof LightweightCharts === 'undefined') return;
+
+                    var chart = LightweightCharts.createChart(container, {
+                        width: container.clientWidth,
+                        height: 360,
+                        layout: {
+                            background: { type: 'solid', color: 'transparent' },
+                            textColor: textColor
+                        },
+                        grid: {
+                            vertLines: { color: gridColor },
+                            horzLines: { color: gridColor }
+                        },
+                        rightPriceScale: { borderColor: gridColor },
+                        timeScale: { borderColor: gridColor, timeVisible: true }
+                    });
+
+                    var candleSeries = chart.addCandlestickSeries({
+                        upColor: '#00a87e',
+                        downColor: '#e23b4a',
+                        borderVisible: false,
+                        wickUpColor: '#00a87e',
+                        wickDownColor: '#e23b4a'
+                    });
+
+                    var pairId = @Model.CryptoPairId;
+                    var fromDate = '@Model.StartDate.ToString("yyyy-MM-dd")';
+                    var toDate = '@Model.EndDate.ToString("yyyy-MM-dd")';
+                    var markers = @Json.Serialize(tradeMarkers);
+
+                    fetch('/pairs/' + pairId + '/candles?from=' + fromDate + '&to=' + toDate)
+                        .then(function (r) { return r.json(); })
+                        .then(function (candles) {
+                            if (!candles || candles.length === 0) {
+                                container.style.display = 'none';
+                                document.getElementById('priceChartMsg').style.display = 'block';
+                                return;
+                            }
+                            candleSeries.setData(candles);
+                            // Sort markers by time and deduplicate same-time markers
+                            var sorted = markers.slice().sort(function (a, b) {
+                                return a.time < b.time ? -1 : a.time > b.time ? 1 : 0;
+                            });
+                            candleSeries.setMarkers(sorted);
+                            chart.timeScale().fitContent();
+                        })
+                        .catch(function () {
+                            container.style.display = 'none';
+                            document.getElementById('priceChartMsg').style.display = 'block';
+                        });
+
+                    new ResizeObserver(function () {
+                        chart.applyOptions({ width: container.clientWidth });
+                    }).observe(container);
+                })();
+
+                // ── Drawdown Curve ────────────────────────────────────────────
+                (function () {
+                    var canvas = document.getElementById('drawdownChart');
+                    if (!canvas || typeof Chart === 'undefined') return;
+                    var labels = @Json.Serialize(drawdownLabels);
+                    var values = @Json.Serialize(drawdownValues);
+                    new Chart(canvas.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Drawdown (%)',
+                                data: values,
+                                borderColor: '#e23b4a',
+                                backgroundColor: 'rgba(226,59,74,0.15)',
+                                fill: true,
+                                tension: 0.2,
+                                pointRadius: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: {
+                                    max: 0,
+                                    ticks: { color: textColor, callback: function (v) { return v + '%'; } },
+                                    grid: { color: gridColor }
+                                },
+                                x: { ticks: { color: textColor }, grid: { color: gridColor } }
+                            }
+                        }
+                    });
+                })();
+            })();
+        </script>
+    }
+}

@@ -126,44 +126,55 @@ namespace CryptoBacktestingDashboard.Services
             return result;
         }
 
-        // Overload for nullable decimal list (used for MACD signal line)
+        // Overload for nullable decimal list (used for MACD signal line).
+        // The input can begin with a run of leading nulls (e.g. the MACD line is null
+        // during the slow-EMA warmup), so the seed is driven by how many consecutive
+        // non-null values we've seen, NOT by a fixed index. This avoids dereferencing a
+        // null previous EMA value, which previously crashed every MACD backtest.
         private static List<decimal?> CalculateEma(List<decimal?> values, int period)
         {
             var result = new List<decimal?>();
             if (values.Count == 0) return result;
             var multiplier = 2m / (period + 1);
 
+            decimal? previousEma = null;   // last computed EMA value
+            decimal seedSum = 0;           // running sum while collecting seed window
+            int seedCount = 0;             // consecutive non-null values gathered for the seed
+
             for (int i = 0; i < values.Count; i++)
             {
                 if (values[i] == null)
                 {
+                    // A gap resets the seed; we can only EMA over a contiguous run.
                     result.Add(null);
+                    previousEma = null;
+                    seedSum = 0;
+                    seedCount = 0;
                     continue;
                 }
 
-                if (i < period - 1)
-                {
-                    result.Add(null);
-                    continue;
-                }
+                var value = values[i]!.Value;
 
-                if (i == period - 1)
+                if (previousEma == null)
                 {
-                    decimal sum = 0;
-                    int count = 0;
-                    for (int j = 0; j < period; j++)
+                    // Still building the initial SMA seed.
+                    seedSum += value;
+                    seedCount++;
+
+                    if (seedCount < period)
                     {
-                        if (values[j] != null)
-                        {
-                            sum += values[j]!.Value;
-                            count++;
-                        }
+                        result.Add(null);
                     }
-                    result.Add(count > 0 ? sum / count : null);
+                    else
+                    {
+                        previousEma = seedSum / period;
+                        result.Add(previousEma);
+                    }
                 }
                 else
                 {
-                    result.Add((values[i]!.Value - result[i - 1]!.Value) * multiplier + result[i - 1]!.Value);
+                    previousEma = (value - previousEma.Value) * multiplier + previousEma.Value;
+                    result.Add(previousEma);
                 }
             }
 

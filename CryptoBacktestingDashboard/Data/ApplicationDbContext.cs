@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using CryptoBacktestingDashboard.Models;
 using CryptoBacktestingDashboard.Models.Crypto;
 
 namespace CryptoBacktestingDashboard.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext<AppUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
@@ -18,11 +19,26 @@ namespace CryptoBacktestingDashboard.Data
         public DbSet<CryptoPair> CryptoPairs { get; set; }
         public DbSet<Indicator> Indicators { get; set; }
         public DbSet<IndicatorComparison> IndicatorComparisons { get; set; }
-        public DbSet<RiskManagement> RiskManagements { get; set; }
+        public DbSet<Attachment> Attachments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // An IndicatorComparison references two Indicators. Cascade-delete on both
+            // would create multiple cascade paths to the Indicators table (SQL error 1785),
+            // so pin both to Restrict (no cascade).
+            modelBuilder.Entity<IndicatorComparison>()
+                .HasOne(c => c.IndicatorA)
+                .WithMany()
+                .HasForeignKey(c => c.IndicatorAId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<IndicatorComparison>()
+                .HasOne(c => c.IndicatorB)
+                .WithMany()
+                .HasForeignKey(c => c.IndicatorBId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<CryptoPair>().HasData(
                 new CryptoPair { Id = 1, Symbol = "BTC/USD", BaseAsset = "BTC", QuoteAsset = "USD", CurrentPrice = 60000, CreatedAt = System.DateTime.Now },
@@ -34,13 +50,8 @@ namespace CryptoBacktestingDashboard.Data
                 new Indicator { Id = 2, Name = "MACD", Type = IndicatorType.MACD, Period = 12, Threshold = 26, Description = "Moving Average Convergence Divergence", CreatedAt = System.DateTime.Now }
             );
 
-            modelBuilder.Entity<RiskManagement>().HasData(
-                new RiskManagement { Id = 1, Name = "Stop Loss", Type = RiskManagementType.StopLoss, Value = 2, Description = "2% Stop Loss", CreatedAt = System.DateTime.Now },
-                new RiskManagement { Id = 2, Name = "Take Profit", Type = RiskManagementType.TakeProfit, Value = 5, Description = "5% Take Profit", CreatedAt = System.DateTime.Now }
-            );
-
             modelBuilder.Entity<BacktestStrategy>().HasData(
-                new BacktestStrategy { Id = 1, Name = "RSI Strategy", Description = "A simple RSI strategy", IsActive = true, InitialCapital = 10000, LookbackPeriod = 100, RiskManagementId = 1, CreatedAt = System.DateTime.Now }
+                new BacktestStrategy { Id = 1, Name = "RSI Strategy", Description = "A simple RSI strategy", IsActive = true, InitialCapital = 10000, LookbackPeriod = 100, StopLossPercent = 5m, TakeProfitPercent = 10m, PositionSizePercent = 100m, CreatedAt = System.DateTime.Now }
             );
 
             modelBuilder.Entity<BacktestSession>().HasData(

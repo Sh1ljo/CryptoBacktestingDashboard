@@ -49,14 +49,20 @@ namespace CryptoBacktestingDashboard.Models.Crypto
             IsOptimized = false;
         }
 
+        // A session only has a result once it's been run. A run always leaves a positive
+        // FinalBalance (cash can't reach 0 in a long-only backtest), so FinalBalance == 0
+        // means "not run yet" — show 0 profit/ROI instead of a phantom -100%.
+        public bool HasRun => FinalBalance > 0;
+
         public decimal GetProfit()
         {
+            if (!HasRun) return 0;
             return FinalBalance - InitialBalance;
         }
 
         public decimal GetROI()
         {
-            if (InitialBalance == 0) return 0;
+            if (!HasRun || InitialBalance == 0) return 0;
             return (GetProfit() / InitialBalance) * 100;
         }
 

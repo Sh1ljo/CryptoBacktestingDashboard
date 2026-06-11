@@ -24,7 +24,7 @@ namespace CryptoBacktestingDashboard.Controllers
         }
 
         [HttpGet("")]
-        public async Task<IActionResult> Index(string? q = null)
+        public async Task<IActionResult> Index(string? q = null, int page = 1, int pageSize = 9)
         {
             var sessions = await _sessionRepository.GetItemsAsync();
 
@@ -36,7 +36,18 @@ namespace CryptoBacktestingDashboard.Controllers
                 ).ToList();
             }
 
-            // AJAX request check
+            sessions = sessions.OrderByDescending(s => s.GetProfit()).ToList();
+
+            var totalCount = sessions.Count;
+            var totalPages = (int)System.Math.Ceiling(totalCount / (double)pageSize);
+            page = System.Math.Max(1, System.Math.Min(page, System.Math.Max(1, totalPages)));
+            sessions = sessions.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            ViewData["CurrentPage"] = page;
+            ViewData["TotalPages"] = totalPages;
+            ViewData["TotalCount"] = totalCount;
+            ViewData["Query"] = q;
+
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
                 return PartialView("_SessionListPartial", sessions);
@@ -133,11 +144,11 @@ namespace CryptoBacktestingDashboard.Controllers
             try
             {
                 await _backtestService.RunBacktestAsync(session);
-                TempData["SuccessMessage"] = "Backtest completed successfully.";
+                TempData["Success"] = "Backtest completed successfully.";
             }
             catch (InvalidOperationException ex)
             {
-                TempData["ErrorMessage"] = ex.Message;
+                TempData["Error"] = ex.Message;
             }
 
             return RedirectToAction(nameof(Details), new { id });

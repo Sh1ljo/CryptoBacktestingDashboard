@@ -98,25 +98,98 @@
 
 <section>
     <h3>Risk Management</h3>
-    @if (Model.RiskManagement != null)
+    <div class="grid grid-4">
+        <div class="card" style="text-align: center;">
+            <div class="metric-label">Stop Loss</div>
+            <div style="font-size: 22px; font-weight: 600; color: #e23b4a;">@Model.StopLossPercent.ToString("0.##")%</div>
+        </div>
+        <div class="card" style="text-align: center;">
+            <div class="metric-label">Take Profit</div>
+            <div style="font-size: 22px; font-weight: 600; color: #00a87e;">@Model.TakeProfitPercent.ToString("0.##")%</div>
+        </div>
+        <div class="card" style="text-align: center;">
+            <div class="metric-label">Trailing Stop</div>
+            <div style="font-size: 22px; font-weight: 600; color: #191c1f;">
+                @(Model.TrailingStopPercent.HasValue ? Model.TrailingStopPercent.Value.ToString("0.##") + "%" : "Off")
+            </div>
+        </div>
+        <div class="card" style="text-align: center;">
+            <div class="metric-label">Risk : Reward</div>
+            <div style="font-size: 22px; font-weight: 600; color: @(Model.RiskRewardRatio >= 1.5m ? "#00a87e" : "#e2a23b");">
+                @Model.RiskRewardRatio.ToString("0.##") : 1
+            </div>
+        </div>
+    </div>
+    <p style="color: #505a63; font-size: 14px; margin-top: 0.75rem;">
+        Position size: <strong>@((Model.PositionSizePercent.HasValue && Model.PositionSizePercent.Value > 0 ? Model.PositionSizePercent.Value : 100m).ToString("0.##"))%</strong> of cash per trade.
+        &nbsp;&middot;&nbsp;
+        Trade direction:
+        @switch (Model.TradeDirection)
+        {
+            case CryptoBacktestingDashboard.Models.Crypto.TradeDirection.LongOnly:
+                <strong style="color: #00a87e;">Long Only ▲</strong>
+                break;
+            case CryptoBacktestingDashboard.Models.Crypto.TradeDirection.ShortOnly:
+                <strong style="color: #e23b4a;">Short Only ▼</strong>
+                break;
+            case CryptoBacktestingDashboard.Models.Crypto.TradeDirection.Both:
+                <strong style="color: #494fdf;">Both ▲▼</strong>
+                break;
+        }
+    </p>
+</section>
+
+<section>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>Signal Rules</h3>
+        <a asp-action="ManageComparisons" asp-route-strategyId="@Model.Id" class="btn btn-outlined btn-sm">Manage Rules</a>
+    </div>
+
+    @{
+        string ComparisonPhrase(CryptoBacktestingDashboard.Models.Crypto.ComparisonType t) => t switch
+        {
+            CryptoBacktestingDashboard.Models.Crypto.ComparisonType.CrossoverAbove => "crosses above",
+            CryptoBacktestingDashboard.Models.Crypto.ComparisonType.CrossoverBelow => "crosses below",
+            CryptoBacktestingDashboard.Models.Crypto.ComparisonType.GreaterThan => "is greater than",
+            CryptoBacktestingDashboard.Models.Crypto.ComparisonType.LessThan => "is less than",
+            CryptoBacktestingDashboard.Models.Crypto.ComparisonType.Equals => "equals",
+            _ => t.ToString()
+        };
+    }
+
+    @if (Model.Comparisons != null && Model.Comparisons.Count > 0)
     {
         <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h6>@Model.RiskManagement.Name</h6>
-                <span class="badge badge-info">@Model.RiskManagement.Type</span>
-            </div>
-            <p style="color: #505a63; margin: 0.5rem 0 1rem 0;">
-                @Model.RiskManagement.Description
-            </p>
-            <p style="margin: 0; color: #505a63; font-size: 14px;">
-                <strong>Value:</strong> @Model.RiskManagement.Value%
-            </p>
+            <table style="margin: 0;">
+                <thead>
+                    <tr><th>Rule</th><th>Signal</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Comparisons)
+                    {
+                        var isBuy = c.TargetSignal == CryptoBacktestingDashboard.Models.Crypto.IndicatorSignal.Buy;
+                        <tr>
+                            <td>
+                                <strong>@c.IndicatorA?.Name</strong> @ComparisonPhrase(c.ComparisonType) <strong>@c.IndicatorB?.Name</strong>
+                            </td>
+                            <td>
+                                <span class="badge @(isBuy ? "badge-success" : "badge-danger")">
+                                    @(isBuy ? "▲ Buy" : "▼ Sell")
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     }
     else
     {
         <div class="card" style="padding: 2rem;">
-            <p style="color: #8d969e; margin: 0;">No risk management rules configured.</p>
+            <p style="color: #8d969e; margin: 0;">
+                No signal rules defined. This strategy trades only on the indicators above.
+                Use <strong>Manage Rules</strong> to add crossover/comparison rules between two indicators.
+            </p>
         </div>
     }
 </section>

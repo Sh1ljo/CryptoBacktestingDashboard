@@ -4,50 +4,50 @@
     ViewData["Title"] = "Edit Crypto Pair";
 }
 
-<div class="hero" style="margin-bottom: 2rem;">
-    <h1 style="margin-bottom: 0.5rem;">Edit Trading Pair</h1>
-    <p class="hero-subtitle" style="margin: 0; color: var(--rui-cool-gray);">Update the cryptocurrency pair configuration.</p>
+<div class="page-hero">
+    <h1 class="page-hero__title">Edit Trading Pair</h1>
+    <p class="page-hero__subtitle">Update the cryptocurrency pair configuration.</p>
 </div>
 
-<div class="card" style="max-width: 800px; margin: 0 auto; padding: 2.5rem; border-radius: 16px; border: 1px solid var(--rui-surface-light); box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" style="width: 100%;">
+<div class="form-card">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" class="form-shell">
 
         <input type="hidden" asp-for="Id" />
         <input type="hidden" asp-for="CreatedAt" />
 
-        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="Symbol" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Symbol (e.g., BTC/USD)</label>
-                <input asp-for="Symbol" class="form-control" placeholder="BTC/USD" style="padding: 0.75rem 1rem; border-radius: 8px;" />
-                <span asp-validation-for="Symbol" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+        <div class="grid grid-2 form-grid">
+            <div class="form-group">
+                <label asp-for="Symbol" class="form-label">Symbol (e.g., BTC/USD)</label>
+                <input asp-for="Symbol" class="form-control" placeholder="BTC/USD" />
+                <span asp-validation-for="Symbol" class="text-danger"></span>
             </div>
 
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="CurrentPrice" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Current Price ($)</label>
-                <input asp-for="CurrentPrice" class="form-control" type="number" step="any" style="padding: 0.75rem 1rem; border-radius: 8px;" />
-                <span asp-validation-for="CurrentPrice" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
-            </div>
-        </div>
-
-        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="BaseAsset" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Base Asset (e.g., BTC)</label>
-                <input asp-for="BaseAsset" class="form-control" placeholder="BTC" style="padding: 0.75rem 1rem; border-radius: 8px;" />
-                <span asp-validation-for="BaseAsset" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
-            </div>
-
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="QuoteAsset" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Quote Asset (e.g., USD)</label>
-                <input asp-for="QuoteAsset" class="form-control" placeholder="USD" style="padding: 0.75rem 1rem; border-radius: 8px;" />
-                <span asp-validation-for="QuoteAsset" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+            <div class="form-group">
+                <label asp-for="CurrentPrice" class="form-label">Current Price ($)</label>
+                <input asp-for="CurrentPrice" class="form-control" type="number" step="any" />
+                <span asp-validation-for="CurrentPrice" class="text-danger"></span>
             </div>
         </div>
 
-        <hr style="border: none; border-top: 1px solid var(--rui-surface-light); margin: 2rem 0;" />
+        <div class="grid grid-2 form-grid">
+            <div class="form-group">
+                <label asp-for="BaseAsset" class="form-label">Base Asset (e.g., BTC)</label>
+                <input asp-for="BaseAsset" class="form-control" placeholder="BTC" />
+                <span asp-validation-for="BaseAsset" class="text-danger"></span>
+            </div>
 
-        <div style="display: flex; gap: 1rem; justify-content: center;">
-            <button type="submit" class="btn btn-primary" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600;">Update Pair</button>
-            <a asp-action="Index" class="btn btn-outline" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600; text-align: center;">Cancel</a>
+            <div class="form-group">
+                <label asp-for="QuoteAsset" class="form-label">Quote Asset (e.g., USD)</label>
+                <input asp-for="QuoteAsset" class="form-control" placeholder="USD" />
+                <span asp-validation-for="QuoteAsset" class="text-danger"></span>
+            </div>
+        </div>
+
+        <hr class="form-divider" />
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Update Pair</button>
+            <a asp-action="Index" class="btn btn-outline">Cancel</a>
         </div>
     </form>
 </div>

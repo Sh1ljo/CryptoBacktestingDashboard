@@ -1,92 +1,233 @@
 @model CryptoBacktestingDashboard.Models.Crypto.BacktestStrategy
+@using CryptoBacktestingDashboard.Models.Crypto
 
 @{
     ViewData["Title"] = "Edit Strategy";
+    var allIndicators = ViewData["AllIndicators"] as IEnumerable<Indicator> ?? Enumerable.Empty<Indicator>();
+    var selectedIndicatorIds = ViewData["SelectedIndicatorIds"] as int[] ?? new int[0];
 }
 
-<div class="hero" style="margin-bottom: 2rem;">
-    <h1 style="margin-bottom: 0.5rem;">Edit Trading Strategy</h1>
-    <p class="hero-subtitle" style="margin: 0; color: var(--rui-cool-gray);">Update your strategy configuration</p>
+<div class="page-hero">
+    <h1 class="page-hero__title">Edit Trading Strategy</h1>
+    <p class="page-hero__subtitle">Update your strategy configuration</p>
 </div>
 
-<div class="card" style="max-width: 900px; margin: 0 auto; padding: 2.5rem; border-radius: 16px; border: 1px solid var(--rui-surface-light); box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" style="width: 100%;">
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+    <div class="form-card" style="margin:0;">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post" class="form-shell">
 
-        <input type="hidden" asp-for="Id" />
-        <input type="hidden" asp-for="CreatedAt" />
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="CreatedAt" />
 
-        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="Name" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Strategy Name</label>
-                <input asp-for="Name" class="form-control" placeholder="e.g., Moving Average Crossover" style="padding: 0.75rem 1rem; border-radius: 8px;" />
-                <span asp-validation-for="Name" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+        <div class="grid grid-2 form-grid">
+            <div class="form-group">
+                <label asp-for="Name" class="form-label">Strategy Name</label>
+                <input asp-for="Name" class="form-control" placeholder="e.g., Moving Average Crossover" />
+                <span asp-validation-for="Name" class="text-danger"></span>
             </div>
 
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="IsActive" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Status</label>
-                <select asp-for="IsActive" class="form-control" style="padding: 0.75rem 1rem; border-radius: 8px;">
+            <div class="form-group">
+                <label asp-for="IsActive" class="form-label">Status</label>
+                <select asp-for="IsActive" class="form-control">
                     <option value="true">Active</option>
                     <option value="false">Inactive</option>
                 </select>
-                <span asp-validation-for="IsActive" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+                <span asp-validation-for="IsActive" class="text-danger"></span>
             </div>
         </div>
 
-        <div class="form-group" style="margin-bottom: 2rem;">
-            <label asp-for="Description" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Description</label>
-            <textarea asp-for="Description" class="form-control" rows="3" placeholder="Describe your trading strategy..." style="padding: 0.75rem 1rem; border-radius: 8px;"></textarea>
-            <span asp-validation-for="Description" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+        <div class="form-group form-block">
+            <label asp-for="Description" class="form-label">Description</label>
+            <textarea asp-for="Description" class="form-control" rows="3" placeholder="Describe your trading strategy..."></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
         </div>
 
-        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="InitialCapital" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Initial Capital ($)</label>
-                <input asp-for="InitialCapital" class="form-control" type="number" step="0.01" min="0" style="padding: 0.75rem 1rem; border-radius: 8px;" />
-                <span asp-validation-for="InitialCapital" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+        <div class="grid grid-2 form-grid">
+            <div class="form-group">
+                <label asp-for="InitialCapital" class="form-label">Initial Capital ($)</label>
+                <input asp-for="InitialCapital" class="form-control" type="number" step="0.01" min="0" />
+                <span asp-validation-for="InitialCapital" class="text-danger"></span>
             </div>
 
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="LookbackPeriod" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Lookback Period (candles)</label>
-                <input asp-for="LookbackPeriod" class="form-control" type="number" min="1" style="padding: 0.75rem 1rem; border-radius: 8px;" />
-                <span asp-validation-for="LookbackPeriod" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
+            <div class="form-group">
+                <label asp-for="LookbackPeriod" class="form-label">Lookback Period (candles)</label>
+                <input asp-for="LookbackPeriod" class="form-control" type="number" min="1" />
+                <span asp-validation-for="LookbackPeriod" class="text-danger"></span>
             </div>
         </div>
 
-        <div class="grid grid-2" style="gap: 2rem; margin-bottom: 2rem;">
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label asp-for="RiskManagementId" class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Risk Management</label>
-                <select asp-for="RiskManagementId" asp-items="ViewBag.RiskManagementId" class="form-control" style="padding: 0.75rem 1rem; border-radius: 8px;">
-                    <option value="">-- Select Risk Management --</option>
+        <hr class="form-divider" />
+
+        <!-- Risk Management -->
+        <h3>Risk Management</h3>
+        <div class="grid grid-2 form-grid">
+            <div class="form-group">
+                <label asp-for="StopLossPercent" class="form-label">Stop Loss (%) *</label>
+                <input asp-for="StopLossPercent" class="form-control" type="number" step="0.01" min="0.1" />
+                <small class="form-help">Exit a losing trade when price drops this % below entry.</small>
+                <span asp-validation-for="StopLossPercent" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="TakeProfitPercent" class="form-label">Take Profit (%) *</label>
+                <input asp-for="TakeProfitPercent" class="form-control" type="number" step="0.01" min="0.1" />
+                <small class="form-help">Exit a winning trade when price rises this % above entry.</small>
+                <span asp-validation-for="TakeProfitPercent" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="grid grid-2 form-grid">
+            <div class="form-group">
+                <label asp-for="TrailingStopPercent" class="form-label">Trailing Stop (%) &mdash; optional</label>
+                <input asp-for="TrailingStopPercent" class="form-control" type="number" step="0.01" min="0.1" placeholder="leave blank to disable" />
+                <small class="form-help">Lets winners run: the stop trails this % below the highest price since entry.</small>
+                <span asp-validation-for="TrailingStopPercent" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="PositionSizePercent" class="form-label">Position Size (%) &mdash; optional</label>
+                <input asp-for="PositionSizePercent" class="form-control" type="number" step="1" min="1" max="100" placeholder="100" />
+                <small class="form-help">% of available cash to invest per trade. Blank = 100%.</small>
+                <span asp-validation-for="PositionSizePercent" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="grid grid-2 form-grid">
+            <div class="form-group">
+                <label asp-for="TradeDirection" class="form-label">Trade Direction</label>
+                <select asp-for="TradeDirection" class="form-control">
+                    <option value="0">Long Only (buy signals only)</option>
+                    <option value="1">Short Only (sell signals only)</option>
+                    <option value="2">Both (long &amp; short)</option>
                 </select>
-                <span asp-validation-for="RiskManagementId" class="text-danger" style="font-size: 0.875rem; margin-top: 0.25rem;"></span>
-            </div>
-
-            <div class="form-group" style="display: flex; flex-direction: column;">
-                <label class="control-label" style="font-weight: 500; font-size: 0.875rem; color: var(--rui-dark); margin-bottom: 0.5rem;">Technical Indicators</label>
-                <select name="IndicatorIds" asp-items="ViewBag.IndicatorIds" multiple class="form-control" style="padding: 0.5rem 1rem; border-radius: 8px; height: 120px;">
-                </select>
-                <small style="color: #8d969e; margin-top: 0.25rem;">Hold Ctrl/Cmd to select multiple</small>
+                <small class="form-help">Long = buy &amp; profit from rising prices. Short = profit from falling prices. Both = flip between longs and shorts.</small>
             </div>
         </div>
+        <div class="section-note section-note--accent" style="margin-bottom: 2rem;">
+            <strong>Risk : Reward</strong> = <span id="rrDisplay">—</span> : 1
+            <small class="form-help" style="display:block; margin-top:0.25rem;">Reward &divide; Risk = Take Profit &divide; Stop Loss. Aim for 1.5 or higher.</small>
+        </div>
 
-        <hr style="border: none; border-top: 1px solid var(--rui-surface-light); margin: 2rem 0;" />
+        <hr class="form-divider" />
+
+        <!-- Indicators -->
+        <h3>Indicators</h3>
+        <div class="form-group form-block">
+            <label class="form-label">Technical Indicators *</label>
+            @if (allIndicators.Any())
+            {
+                <div id="indicatorChecklist" class="indicator-checklist">
+                    @foreach (var ind in allIndicators)
+                    {
+                        <label class="indicator-check">
+                            <input type="checkbox" name="IndicatorIds" value="@ind.Id"
+                                   checked="@(selectedIndicatorIds.Contains(ind.Id))" />
+                            <span>@ind.Name <small class="form-help">@ind.Type &middot; period @ind.Period</small></span>
+                        </label>
+                    }
+                </div>
+                <small class="form-help">Tick one or more indicators.</small>
+            }
+            else
+            {
+                <div class="section-note">
+                    <p style="margin: 0;">No indicators yet. <a asp-controller="Indicator" asp-action="Create">Create an indicator</a> first.</p>
+                </div>
+            }
+        </div>
+
+        <hr class="form-divider" />
 
         <!-- Indicator Comparisons -->
-        <h3 style="margin-bottom: 1.5rem; color: var(--rui-dark);">Indicator Comparisons</h3>
-        <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f6f8fa; border-radius: 8px; border-left: 4px solid var(--rui-blue);">
-            <p style="margin: 0 0 1rem 0; color: #505a63; font-size: 0.875rem;">
-                Create rules that compare two indicators to generate signals. For example: "Buy when SMA(12) crosses above SMA(26)".
-                To add comparisons, save your strategy changes and use the "Manage Comparisons" option below.
+        <h3>Indicator Comparisons</h3>
+        <div class="section-note section-note--accent" style="margin-bottom: 2rem;">
+            <p style="margin: 0 0 1rem 0;">
+                Create rules that compare two indicators to generate signals. For example: "Buy when SMA(12) crosses above SMA(26)" or "Buy when RSI < 30".
             </p>
+            <a asp-action="ManageComparisons" asp-route-strategyId="@Model.Id" class="btn btn-blue">Manage Comparisons</a>
         </div>
 
-        <div style="display: flex; gap: 1rem; justify-content: center;">
-            <button type="submit" class="btn btn-primary" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600;">Update Strategy</button>
-            <a asp-action="Index" class="btn btn-outline" style="padding: 0.875rem 2rem; border-radius: 8px; font-weight: 600; text-align: center;">Cancel</a>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Update Strategy</button>
+            <a asp-action="Index" class="btn btn-outline">Cancel</a>
         </div>
     </form>
+    </div>
+
+    <div class="form-card" style="margin:0; height: fit-content;">
+        <h3>Dokumenti (Attachments)</h3>
+        <p class="section-note">Prikvačite datoteke uz ovu strategiju (npr. dokumentacija, slike).</p>
+        <form id="attachmentDz"
+              asp-controller="BacktestStrategy"
+              asp-action="UploadAttachment"
+              asp-route-strategyId="@Model.Id"
+              enctype="multipart/form-data"
+              class="dropzone p-4" style="border: 2px dashed #ccc; border-radius: 8px; text-align: center; background: #fafafa;">
+              <div class="dz-message" data-dz-message><span>Drop files here or click to upload</span></div>
+        </form>
+
+        <div id="attachmentList" style="margin-top: 2rem;"></div>
+    </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
+    <style>
+        .indicator-checklist {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 1rem;
+            max-height: 180px; overflow-y: auto; padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border, #d0d5dd); border-radius: 6px;
+        }
+        .indicator-check { display: flex; align-items: baseline; gap: 0.5rem; margin: 0; font-weight: 400; cursor: pointer; }
+        .indicator-check input { margin-top: 0.2rem; }
+    </style>
+    <script>
+        function updateRR() {
+            var sl = parseFloat(document.getElementById('StopLossPercent').value);
+            var tp = parseFloat(document.getElementById('TakeProfitPercent').value);
+            var el = document.getElementById('rrDisplay');
+            if (!el) return;
+            if (sl > 0 && tp > 0) {
+                el.textContent = (tp / sl).toFixed(2);
+                el.style.color = (tp / sl) >= 1.5 ? '#00a87e' : '#e2a23b';
+            } else {
+                el.textContent = '—';
+                el.style.color = '';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            ['StopLossPercent', 'TakeProfitPercent'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.addEventListener('input', updateRR);
+            });
+            updateRR();
+        });
+
+        Dropzone.autoDiscover = false;
+        var attachmentDz = new Dropzone("#attachmentDz", {
+            success: function (file, response) {
+                loadAttachments();
+                this.removeFile(file); // remove from dz UI after upload
+            }
+        });
+
+        $(function () {
+            loadAttachments();
+        });
+
+        function loadAttachments() {
+            $("#attachmentList").load("@Url.Action("GetAttachments", "BacktestStrategy", new { strategyId = Model.Id })");
+        }
+
+        function deleteAttachment(id) {
+            if(!confirm("Jeste li sigurni da želite obrisati datoteku?")) return;
+            $.ajax({
+                url: "@Url.Action("DeleteAttachment", "BacktestStrategy")",
+                method: "POST",
+                data: { id: id },
+                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                success: function () {
+                    loadAttachments();
+                }
+            });
+        }
+    </script>
 }

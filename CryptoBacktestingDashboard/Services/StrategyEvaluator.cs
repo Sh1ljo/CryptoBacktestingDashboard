@@ -74,10 +74,13 @@ namespace CryptoBacktestingDashboard.Services
                     return TradingSignal.Hold;
 
                 case IndicatorType.Stochastic:
-                    // K > 80 = overbought → Sell, K < 20 = oversold → Buy
-                    if (currentValue > 80)
+                    // K > threshold (e.g. 80) = overbought → Sell
+                    // K < (100 - threshold) (e.g. 20) = oversold → Buy
+                    // Fall back to the conventional 80 when threshold is left unset.
+                    var overbought = threshold > 0 ? threshold : 80m;
+                    if (currentValue > overbought)
                         return TradingSignal.Sell;
-                    if (currentValue < 20)
+                    if (currentValue < (100 - overbought))
                         return TradingSignal.Buy;
                     return TradingSignal.Hold;
 

@@ -48,17 +48,11 @@ namespace CryptoBacktestingDashboard.Models.Crypto
 
         public decimal GetProfitPercent()
         {
-            if (EntryPrice == 0) return 0;
-            decimal profit = 0;
-            if (TradeType == TradeType.Long)
-            {
-                profit = ((ExitPrice - EntryPrice) / EntryPrice) * 100;
-            }
-            else
-            {
-                profit = ((EntryPrice - ExitPrice) / EntryPrice) * 100;
-            }
-            return profit;
+            // Return on the capital actually deployed (entry notional), net of commission,
+            // so the percentage is consistent with the dollar P/L from GetProfit().
+            var entryCost = EntryPrice * Quantity;
+            if (entryCost == 0) return 0;
+            return (GetProfit() / entryCost) * 100;
         }
 
         public override string ToString()

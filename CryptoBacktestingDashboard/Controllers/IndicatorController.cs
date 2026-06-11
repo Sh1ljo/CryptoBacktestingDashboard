@@ -17,7 +17,7 @@ namespace CryptoBacktestingDashboard.Controllers
         }
 
         [HttpGet("")]
-        public async Task<IActionResult> Index(string? q = null)
+        public async Task<IActionResult> Index(string? q = null, int page = 1, int pageSize = 9)
         {
             var indicators = await _indicatorRepository.GetItemsAsync();
 
@@ -28,6 +28,16 @@ namespace CryptoBacktestingDashboard.Controllers
                     (i.Description?.Contains(q, System.StringComparison.OrdinalIgnoreCase) ?? false)
                 ).ToList();
             }
+
+            var totalCount = indicators.Count;
+            var totalPages = (int)System.Math.Ceiling(totalCount / (double)pageSize);
+            page = System.Math.Max(1, System.Math.Min(page, System.Math.Max(1, totalPages)));
+            indicators = indicators.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            ViewData["CurrentPage"] = page;
+            ViewData["TotalPages"] = totalPages;
+            ViewData["TotalCount"] = totalCount;
+            ViewData["Query"] = q;
 
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
@@ -58,6 +68,7 @@ namespace CryptoBacktestingDashboard.Controllers
         public async Task<IActionResult> Create(Indicator model)
         {
             ModelState.Remove("Strategies");
+            ValidateIndicator(model);
 
             if (ModelState.IsValid)
             {
@@ -65,6 +76,38 @@ namespace CryptoBacktestingDashboard.Controllers
                 return RedirectToAction(nameof(Index));
             }
             return View(model);
+        }
+
+        // Per-type sanity checks for the overloaded Period/Threshold fields.
+        private void ValidateIndicator(Indicator model)
+        {
+            if (model.Period < 1)
+                ModelState.AddModelError(nameof(Indicator.Period), "Period must be at least 1.");
+
+            switch (model.Type)
+            {
+                case IndicatorType.RSI:
+                case IndicatorType.Stochastic:
+                    if (model.Threshold < 1 || model.Threshold > 99)
+                        ModelState.AddModelError(nameof(Indicator.Threshold),
+                            "Overbought level must be between 1 and 99 (e.g. 70 for RSI, 80 for Stochastic).");
+                    break;
+
+                case IndicatorType.MACD:
+                    if (model.Threshold < 2)
+                        ModelState.AddModelError(nameof(Indicator.Threshold),
+                            "Slow EMA period must be at least 2 (standard 26).");
+                    else if (model.Threshold <= model.Period)
+                        ModelState.AddModelError(nameof(Indicator.Threshold),
+                            "Slow EMA period should be larger than the fast EMA period.");
+                    break;
+
+                case IndicatorType.BollingerBands:
+                    if (model.Threshold < 0.5m || model.Threshold > 5m)
+                        ModelState.AddModelError(nameof(Indicator.Threshold),
+                            "Std-dev multiplier should be between 0.5 and 5 (standard 2).");
+                    break;
+            }
         }
 
         [HttpGet("edit/{id}")]
@@ -89,6 +132,7 @@ namespace CryptoBacktestingDashboard.Controllers
             var ok = await TryUpdateModelAsync(indicator);
 
             ModelState.Remove("Strategies");
+            ValidateIndicator(indicator);
 
             if (ok && ModelState.IsValid)
             {

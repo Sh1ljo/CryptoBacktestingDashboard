@@ -2,6 +2,16 @@
 
 @{
     ViewData["Title"] = $"Pair: {Model.Symbol}";
+    var candlesForChart = Model.CandleDataHistory?
+        .OrderBy(c => c.OpenTime)
+        .Select(c => new {
+            time = c.OpenTime.ToString("yyyy-MM-dd"),
+            open = c.Open,
+            high = c.High,
+            low = c.Low,
+            close = c.Close
+        }).ToList();
+    var hasCandles = candlesForChart != null && candlesForChart.Count > 0;
 }
 
 <nav class="breadcrumbs">
@@ -14,7 +24,7 @@
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
         <div>
             <h2>@Model.Symbol</h2>
-            <p style="font-size: 18px; color: #505a63; margin: 0;">@Model.BaseAsset / @Model.QuoteAsset trading pair</p>
+            <p style="font-size: 18px; color: var(--rui-mid-slate); margin: 0;">@Model.BaseAsset / @Model.QuoteAsset trading pair</p>
         </div>
         <span class="badge badge-success">Live</span>
     </div>
@@ -40,37 +50,43 @@
 
         <div class="card">
             <h6>Trading Information</h6>
-            <p style="margin: 0.5rem 0; color: #505a63;">
-                <strong>Base Asset:</strong> @Model.BaseAsset
-            </p>
-            <p style="margin: 0.5rem 0; color: #505a63;">
-                <strong>Quote Asset:</strong> @Model.QuoteAsset
-            </p>
-            <p style="margin: 0; color: #505a63;">
-                <strong>Added:</strong> @Model.CreatedAt.ToString("MMM dd, yyyy")
-            </p>
+            <p style="margin: 0.5rem 0; color: var(--rui-mid-slate);"><strong>Base Asset:</strong> @Model.BaseAsset</p>
+            <p style="margin: 0.5rem 0; color: var(--rui-mid-slate);"><strong>Quote Asset:</strong> @Model.QuoteAsset</p>
+            <p style="margin: 0; color: var(--rui-mid-slate);"><strong>Added:</strong> @Model.CreatedAt.ToString("MMM dd, yyyy")</p>
         </div>
     </div>
 </section>
 
+@if (hasCandles)
+{
+    <section>
+        <h3>Price Chart</h3>
+        <div class="card chart-card">
+            <div id="pairPriceChart" style="height: 380px;"></div>
+        </div>
+    </section>
+}
+
 <section>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h3 style="margin: 0;">Candle Data History</h3>
-        <form asp-action="FetchData" asp-route-id="@Model.Id" method="post" style="display: inline;">
-            @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-primary" style="font-size: 12px; padding: 8px 16px;">
-                Fetch 1 Year of Data
-            </button>
-        </form>
-        @if (Model.CandleDataHistory != null && Model.CandleDataHistory.Count > 0)
-        {
-            <form asp-action="ClearData" asp-route-id="@Model.Id" method="post" style="display: inline;">
+        <div style="display: flex; gap: 0.5rem;">
+            <form asp-action="FetchData" asp-route-id="@Model.Id" method="post" style="display: inline;">
                 @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-outlined" style="font-size: 12px; padding: 8px 16px; color: #e23b4a; border-color: #e23b4a;" onclick="return confirm('Clear all candle data for this pair?')">
-                    Clear Data
+                <button type="submit" class="btn btn-primary" style="font-size: 12px; padding: 8px 16px;">
+                    Fetch 1 Year of Data
                 </button>
             </form>
-        }
+            @if (Model.CandleDataHistory != null && Model.CandleDataHistory.Count > 0)
+            {
+                <form asp-action="ClearData" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outlined" style="font-size: 12px; padding: 8px 16px; color: #e23b4a; border-color: #e23b4a;" onclick="return confirm('Clear all candle data for this pair?')">
+                        Clear Data
+                    </button>
+                </form>
+            }
+        </div>
     </div>
     @if (Model.CandleDataHistory != null && Model.CandleDataHistory.Count > 0)
     {
@@ -99,14 +115,14 @@
                 }
             </tbody>
         </table>
-        <p style="color: #8d969e; font-size: 12px; text-align: center;">
+        <p style="color: var(--rui-cool-gray); font-size: 12px; text-align: center;">
             Showing latest 20 of @Model.CandleDataHistory.Count candles
         </p>
     }
     else
     {
         <div class="card" style="padding: 2rem; text-align: center;">
-            <p style="color: #8d969e; margin-bottom: 1rem;">No candle data available. Click "Fetch 1 Year of Data" to load historical prices from Binance.</p>
+            <p style="color: var(--rui-cool-gray); margin-bottom: 1rem;">No candle data available. Click "Fetch 1 Year of Data" to load historical prices from Binance.</p>
         </div>
     }
 </section>
@@ -129,10 +145,9 @@
             <tbody>
                 @foreach (var session in Model.BacktestSessions)
                 {
-                    var profit = session.GetProfit();
-                    var roi = session.GetROI();
-                    var profitColor = profit >= 0 ? "#00a87e" : "#e23b4a";
-
+                    var sessionProfit = session.GetProfit();
+                    var sessionRoi = session.GetROI();
+                    var sessionColor = sessionProfit >= 0 ? "#00a87e" : "#e23b4a";
                     <tr>
                         <td>
                             <a asp-controller="BacktestStrategy" asp-action="Details" asp-route-id="@session.StrategyId">
@@ -140,8 +155,8 @@
                             </a>
                         </td>
                         <td>@session.StartDate.ToString("MMM dd") - @session.EndDate.ToString("MMM dd")</td>
-                        <td style="color: @profitColor; font-weight: 600;">$@Math.Abs(profit).ToString("F2")</td>
-                        <td style="color: @profitColor; font-weight: 600;">@roi.ToString("F1")%</td>
+                        <td style="color: @sessionColor; font-weight: 600;">$@Math.Abs(sessionProfit).ToString("F2")</td>
+                        <td style="color: @sessionColor; font-weight: 600;">@sessionRoi.ToString("F1")%</td>
                         <td>@session.Results.Count</td>
                         <td>
                             <a asp-controller="BacktestSession" asp-action="Details" asp-route-id="@session.Id" class="btn btn-secondary" style="font-size: 12px; padding: 0.4rem 0.8rem;">
@@ -156,7 +171,7 @@
     else
     {
         <div class="card" style="padding: 2rem; text-align: center;">
-            <p style="color: #8d969e; margin: 0;">No backtest sessions for this pair yet.</p>
+            <p style="color: var(--rui-cool-gray); margin: 0;">No backtest sessions for this pair yet.</p>
         </div>
     }
 </section>
@@ -164,3 +179,51 @@
 <section style="display: flex; gap: 1rem;">
     <a asp-action="Index" class="btn btn-outlined">← Back to Pairs</a>
 </section>
+
+@if (hasCandles)
+{
+    @section Scripts {
+        <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+        <script>
+            (function () {
+                var container = document.getElementById('pairPriceChart');
+                if (!container || typeof LightweightCharts === 'undefined') return;
+
+                var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                var textColor = isDark ? '#a0abb5' : '#505a63';
+                var gridColor = isDark ? '#2e343c' : '#e8eaed';
+
+                var chart = LightweightCharts.createChart(container, {
+                    width: container.clientWidth,
+                    height: 380,
+                    layout: {
+                        background: { type: 'solid', color: 'transparent' },
+                        textColor: textColor
+                    },
+                    grid: {
+                        vertLines: { color: gridColor },
+                        horzLines: { color: gridColor }
+                    },
+                    rightPriceScale: { borderColor: gridColor },
+                    timeScale: { borderColor: gridColor, timeVisible: true }
+                });
+
+                var candleSeries = chart.addCandlestickSeries({
+                    upColor: '#00a87e',
+                    downColor: '#e23b4a',
+                    borderVisible: false,
+                    wickUpColor: '#00a87e',
+                    wickDownColor: '#e23b4a'
+                });
+
+                var candles = @Json.Serialize(candlesForChart);
+                candleSeries.setData(candles);
+                chart.timeScale().fitContent();
+
+                new ResizeObserver(function () {
+                    chart.applyOptions({ width: container.clientWidth });
+                }).observe(container);
+            })();
+        </script>
+    }
+}
