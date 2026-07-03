@@ -1,6 +1,7 @@
 using CryptoBacktestingDashboard.Models.Crypto;
 using CryptoBacktestingDashboard.Repositories.EF;
 using CryptoBacktestingDashboard.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 namespace CryptoBacktestingDashboard.Controllers
 {
     [Route("pairs")]
+    [Authorize]
     public class CryptoPairController : Controller
     {
         private readonly CryptoPairRepository _pairRepository;
@@ -21,6 +23,7 @@ namespace CryptoBacktestingDashboard.Controllers
             _candleDataRepository = candleDataRepository;
         }
 
+        [AllowAnonymous]
         [HttpGet("")]
         public async Task<IActionResult> Index(string? q = null, int page = 1, int pageSize = 9)
         {
@@ -36,13 +39,17 @@ namespace CryptoBacktestingDashboard.Controllers
             pairs = pairs.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
             var priceChanges = new Dictionary<int, decimal?>();
+            var candleCounts = new Dictionary<int, int>();
             foreach (var pair in pairs)
             {
                 var change = await _marketDataService.GetPriceChangePercentageAsync(pair.Id);
                 priceChanges[pair.Id] = change;
+                // GetItemsAsync doesn't load candle history; count it explicitly for the card.
+                candleCounts[pair.Id] = await _candleDataRepository.CountByPairIdAsync(pair.Id);
             }
 
             ViewData["PriceChanges"] = priceChanges;
+            ViewData["CandleCounts"] = candleCounts;
             ViewData["CurrentPage"] = page;
             ViewData["TotalPages"] = totalPages;
             ViewData["TotalCount"] = totalCount;
@@ -56,6 +63,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(pairs);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> Details(int id)
         {
@@ -71,6 +79,7 @@ namespace CryptoBacktestingDashboard.Controllers
         }
 
         // Endpoint for Autocomplete AJAX dropdown
+        [AllowAnonymous]
         [HttpGet("search")]
         public async Task<IActionResult> Search(string query)
         {
@@ -84,6 +93,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return Json(results);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}/candles")]
         public async Task<IActionResult> Candles(int id, DateTime? from = null, DateTime? to = null)
         {
@@ -103,6 +113,7 @@ namespace CryptoBacktestingDashboard.Controllers
 
         // Lightweight JSON endpoint so forms can warn when a pair has no candle data
         // before the user wastes a run that would fail with "not enough candle data".
+        [AllowAnonymous]
         [HttpGet("{id}/data-status")]
         public async Task<IActionResult> DataStatus(int id)
         {
@@ -117,6 +128,7 @@ namespace CryptoBacktestingDashboard.Controllers
             });
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("{id}/fetch-data")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> FetchData(int id, string interval = "1d", int daysBack = 365)
@@ -131,6 +143,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("{id}/clear-data")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ClearData(int id)
@@ -147,12 +160,14 @@ namespace CryptoBacktestingDashboard.Controllers
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("create")]
         public IActionResult Create()
         {
             return View(new CryptoPair());
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CryptoPair model)
@@ -168,6 +183,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(model);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("edit/{id}")]
         [ActionName("Edit")]
         public async Task<IActionResult> EditGet(int id)
@@ -178,6 +194,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(pair);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("edit/{id}")]
         [ActionName("Edit")]
         [ValidateAntiForgeryToken]
@@ -201,6 +218,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(pair);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("delete/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)

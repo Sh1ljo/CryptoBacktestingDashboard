@@ -11,14 +11,22 @@ namespace CryptoBacktestingDashboard.Services
     {
         private readonly CandleDataRepository _candleRepo;
         private readonly BacktestResultRepository _resultRepo;
+        private readonly ILogger<BacktestService> _logger;
 
         // Commission charged per side (entry and exit) as a fraction of trade notional.
         private const decimal CommissionRate = 0.001m;
 
-        public BacktestService(CandleDataRepository candleRepo, BacktestResultRepository resultRepo)
+        public BacktestService(CandleDataRepository candleRepo, BacktestResultRepository resultRepo, ILogger<BacktestService> logger)
         {
             _candleRepo = candleRepo;
             _resultRepo = resultRepo;
+            _logger = logger;
+        }
+
+        public async Task<List<CandleData>> GetCandlesAsync(BacktestSession session)
+        {
+            return await _candleRepo.GetByPairIdAndDateRangeAsync(
+                session.CryptoPairId, session.StartDate, session.EndDate);
         }
 
         public async Task<BacktestSession> RunBacktestAsync(BacktestSession session)
@@ -27,13 +35,49 @@ namespace CryptoBacktestingDashboard.Services
             if (strategy == null)
                 throw new InvalidOperationException("Strategy not loaded.");
 
+            _logger.LogInformation(
+                "Backtest starting — Session {SessionId}, Strategy \"{Strategy}\", Pair {PairId}, " +
+                "Balance {Balance:C}, {Start:yyyy-MM-dd} → {End:yyyy-MM-dd}",
+                session.Id, strategy.Name, session.CryptoPairId,
+                session.InitialBalance, session.StartDate, session.EndDate);
+
+            var candles = await GetCandlesAsync(session);
+
+            var (finalBalance, results) = Simulate(strategy, session.InitialBalance, candles, session.Id,
+                session.StartDate, session.EndDate);
+
+            session.FinalBalance = finalBalance;
+            session.ExecutedAt = DateTime.Now;
+
+            await _resultRepo.DeleteBySessionIdAsync(session.Id);
+            foreach (var r in results)
+                await _resultRepo.InsertItemAsync(r);
+
+            session.Results = results;
+
+            _logger.LogInformation(
+                "Backtest completed — Session {SessionId}, Trades {TradeCount}, " +
+                "Final Balance {FinalBalance:C}, P&L {Pnl:C} ({PnlPercent:F2}%)",
+                session.Id, results.Count,
+                finalBalance, finalBalance - session.InitialBalance,
+                session.InitialBalance > 0
+                    ? (finalBalance - session.InitialBalance) / session.InitialBalance * 100m
+                    : 0m);
+
+            return session;
+        }
+
+        // Pure simulation core, with no DB writes. Used both by RunBacktestAsync (which
+        // persists the resulting trades) and OptimizationService (which discards them
+        // after scoring each combo).
+        public (decimal finalBalance, List<BacktestResult> results) Simulate(
+            BacktestStrategy strategy, decimal initialBalance, List<CandleData> candles, int sessionId,
+            DateTime startDate, DateTime endDate)
+        {
             var hasIndicators = strategy.Indicators != null && strategy.Indicators.Count > 0;
             var hasComparisons = strategy.Comparisons != null && strategy.Comparisons.Count > 0;
             if (!hasIndicators && !hasComparisons)
                 throw new InvalidOperationException("Strategy must have at least one indicator or comparison.");
-
-            var candles = await _candleRepo.GetByPairIdAndDateRangeAsync(
-                session.CryptoPairId, session.StartDate, session.EndDate);
 
             var maxIndicatorPeriod = GetMaxIndicatorPeriod(strategy);
             var warmupCandles = Math.Max(strategy.LookbackPeriod, maxIndicatorPeriod);
@@ -42,14 +86,14 @@ namespace CryptoBacktestingDashboard.Services
 
             if (candles.Count < minRequired)
                 throw new InvalidOperationException(
-                    $"Not enough candle data in date range {session.StartDate:yyyy-MMM-dd} to {session.EndDate:yyyy-MMM-dd}. " +
+                    $"Not enough candle data in date range {startDate:yyyy-MMM-dd} to {endDate:yyyy-MMM-dd}. " +
                     $"Need at least {minRequired} candles " +
                     $"(warmup requires {warmupCandles}), got {candles.Count}.");
 
             var results = new List<BacktestResult>();
             var dir = strategy.TradeDirection;
 
-            decimal cash = session.InitialBalance;
+            decimal cash = initialBalance;
             decimal? positionEntryPrice = null;
             decimal? positionQuantity = null;
             decimal? positionSize = null;          // entry notional (qty * entryPrice)
@@ -166,7 +210,7 @@ namespace CryptoBacktestingDashboard.Services
 
                         var trade = new BacktestResult
                         {
-                            BacktestSessionId = session.Id,
+                            BacktestSessionId = sessionId,
                             TradeType = positionIsShort ? TradeType.Short : TradeType.Long,
                             EntryTime = candles[positionOpenIndex!.Value].OpenTime,
                             ExitTime = candle.OpenTime,
@@ -240,7 +284,7 @@ namespace CryptoBacktestingDashboard.Services
 
                 var trade = new BacktestResult
                 {
-                    BacktestSessionId = session.Id,
+                    BacktestSessionId = sessionId,
                     TradeType = positionIsShort ? TradeType.Short : TradeType.Long,
                     EntryTime = candles[positionOpenIndex.Value].OpenTime,
                     ExitTime = lastCandle.OpenTime,
@@ -257,15 +301,7 @@ namespace CryptoBacktestingDashboard.Services
                 results.Add(trade);
             }
 
-            session.FinalBalance = cash;
-            session.ExecutedAt = DateTime.Now;
-
-            await _resultRepo.DeleteBySessionIdAsync(session.Id);
-            foreach (var r in results)
-                await _resultRepo.InsertItemAsync(r);
-
-            session.Results = results;
-            return session;
+            return (cash, results);
         }
 
         private static int GetMaxIndicatorPeriod(BacktestStrategy strategy)

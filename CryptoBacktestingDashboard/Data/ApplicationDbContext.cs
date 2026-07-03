@@ -20,6 +20,9 @@ namespace CryptoBacktestingDashboard.Data
         public DbSet<Indicator> Indicators { get; set; }
         public DbSet<IndicatorComparison> IndicatorComparisons { get; set; }
         public DbSet<Attachment> Attachments { get; set; }
+        public DbSet<OptimizationRun> OptimizationRuns { get; set; }
+        public DbSet<OptimizationResult> OptimizationResults { get; set; }
+        public DbSet<AiChatLog> AiChatLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -50,18 +53,27 @@ namespace CryptoBacktestingDashboard.Data
                 new Indicator { Id = 2, Name = "MACD", Type = IndicatorType.MACD, Period = 12, Threshold = 26, Description = "Moving Average Convergence Divergence", CreatedAt = System.DateTime.Now }
             );
 
-            modelBuilder.Entity<BacktestStrategy>().HasData(
-                new BacktestStrategy { Id = 1, Name = "RSI Strategy", Description = "A simple RSI strategy", IsActive = true, InitialCapital = 10000, LookbackPeriod = 100, StopLossPercent = 5m, TakeProfitPercent = 10m, PositionSizePercent = 100m, CreatedAt = System.DateTime.Now }
-            );
+            // BacktestStrategy and BacktestSession are owned per user — no seed data.
+            // New users start with empty strategies and sessions.
+            // Pairs and indicators are shared globally.
 
-            modelBuilder.Entity<BacktestSession>().HasData(
-                new BacktestSession { Id = 1, StrategyId = 1, CryptoPairId = 1, StartDate = new DateTime(2026, 1, 1), EndDate = new DateTime(2026, 3, 31), ExecutedAt = new DateTime(2026, 4, 1), InitialBalance = 10000, FinalBalance = 12350, IsOptimized = true }
-            );
+            // BacktestStrategy -> AppUser
+            modelBuilder.Entity<BacktestStrategy>()
+                .HasOne(s => s.AppUser)
+                .WithMany()
+                .HasForeignKey(s => s.AppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<BacktestResult>().HasData(
-                new BacktestResult { Id = 1, BacktestSessionId = 1, TradeType = TradeType.Long, EntryTime = new DateTime(2026, 1, 5), ExitTime = new DateTime(2026, 1, 12), EntryPrice = 63000, ExitPrice = 65000, Quantity = 0.1m, Commission = 10, IsWinningTrade = true },
-                new BacktestResult { Id = 2, BacktestSessionId = 1, TradeType = TradeType.Long, EntryTime = new DateTime(2026, 1, 20), ExitTime = new DateTime(2026, 2, 1), EntryPrice = 64500, ExitPrice = 64000, Quantity = 0.1m, Commission = 10, IsWinningTrade = false }
-            );
+            // BacktestSession -> AppUser
+            modelBuilder.Entity<BacktestSession>()
+                .HasOne(s => s.AppUser)
+                .WithMany()
+                .HasForeignKey(s => s.AppUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // AiChatLogs: index on (UserId, DateKey) for daily-count queries
+            modelBuilder.Entity<AiChatLog>()
+                .HasIndex(l => new { l.UserId, l.DateKey });
         }
     }
 }

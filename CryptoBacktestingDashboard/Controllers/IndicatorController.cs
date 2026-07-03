@@ -1,5 +1,6 @@
 using CryptoBacktestingDashboard.Models.Crypto;
 using CryptoBacktestingDashboard.Repositories.EF;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 namespace CryptoBacktestingDashboard.Controllers
 {
     [Route("indicators")]
+    [Authorize]
     public class IndicatorController : Controller
     {
         private readonly IndicatorRepository _indicatorRepository;
@@ -16,6 +18,7 @@ namespace CryptoBacktestingDashboard.Controllers
             _indicatorRepository = indicatorRepository;
         }
 
+        [AllowAnonymous]
         [HttpGet("")]
         public async Task<IActionResult> Index(string? q = null, int page = 1, int pageSize = 9)
         {
@@ -47,6 +50,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(indicators);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> Details(int id)
         {
@@ -57,12 +61,14 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(indicator);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("create")]
         public IActionResult Create()
         {
             return View(new Indicator { CreatedAt = System.DateTime.Now });
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Indicator model)
@@ -110,6 +116,7 @@ namespace CryptoBacktestingDashboard.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("edit/{id}")]
         [ActionName("Edit")]
         public async Task<IActionResult> EditGet(int id)
@@ -120,6 +127,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(indicator);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("edit/{id}")]
         [ActionName("Edit")]
         [ValidateAntiForgeryToken]
@@ -143,6 +151,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(indicator);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("delete/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)

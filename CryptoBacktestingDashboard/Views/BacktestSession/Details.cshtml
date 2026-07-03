@@ -61,12 +61,15 @@
 </nav>
 
 <section>
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+    <div class="detail-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
         <div>
             <h2>@Model.Strategy?.Name</h2>
             <p style="font-size: 20px; color: #505a63; margin-bottom: 1rem;">@Model.CryptoPair?.Symbol</p>
         </div>
-        <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+            <a asp-action="Optimize" asp-route-id="@Model.Id" class="btn btn-outlined" style="padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
+                ⚡ Optimize
+            </a>
             <form id="runForm" asp-action="Run" asp-route-id="@Model.Id" method="post">
                 @Html.AntiForgeryToken()
                 <button id="runBtn" type="submit" class="btn btn-primary" style="padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
@@ -274,7 +277,7 @@
     </section>
 }
 
-<section style="display: flex; gap: 1rem;">
+<section class="detail-header" style="display: flex; gap: 1rem;">
     <a asp-action="Index" class="btn btn-outlined">← Back to Sessions</a>
     <a asp-controller="BacktestStrategy" asp-action="Details" asp-route-id="@Model.StrategyId" class="btn btn-secondary">View Strategy</a>
 </section>

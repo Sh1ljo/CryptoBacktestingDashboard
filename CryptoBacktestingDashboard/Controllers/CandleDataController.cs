@@ -1,11 +1,13 @@
 using CryptoBacktestingDashboard.Models.Crypto;
 using CryptoBacktestingDashboard.Repositories.EF;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
 namespace CryptoBacktestingDashboard.Controllers
 {
     [Route("candles")]
+    [Authorize]
     public class CandleDataController : Controller
     {
         private readonly CandleDataRepository _candleRepository;
@@ -17,6 +19,7 @@ namespace CryptoBacktestingDashboard.Controllers
             _pairRepository = pairRepository;
         }
 
+        [AllowAnonymous]
         [HttpGet("")]
         public async Task<IActionResult> Index()
         {
@@ -24,6 +27,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(candles);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> Details(int id)
         {
@@ -34,6 +38,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(candle);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("create")]
         public async Task<IActionResult> Create()
         {
@@ -42,6 +47,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(new CandleData());
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("create")]
         public async Task<IActionResult> Create(CandleData candle)
         {
@@ -56,6 +62,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return RedirectToAction("Index");
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("{id}/edit")]
         public async Task<IActionResult> Edit(int id)
         {
@@ -68,6 +75,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(candle);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("{id}/edit")]
         public async Task<IActionResult> Edit(int id, CandleData candle)
         {

@@ -11,7 +11,7 @@
 </nav>
 
 <section>
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+    <div class="detail-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
         <div>
             <h2>@Model.Name</h2>
             <p style="font-size: 18px; color: #505a63; margin: 0;">@Model.Description</p>
@@ -23,7 +23,7 @@
 </section>
 
 <section>
-    <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+    <div class="detail-header" style="display: flex; gap: 1rem; margin-bottom: 2rem;">
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit Strategy</a>
         <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
             @Html.AntiForgeryToken()
@@ -120,9 +120,9 @@
             </div>
         </div>
     </div>
-    <p style="color: #505a63; font-size: 14px; margin-top: 0.75rem;">
+    <p style="color: #505a63; font-size: 14px; margin-top: 0.75rem; word-break: break-word;">
         Position size: <strong>@((Model.PositionSizePercent.HasValue && Model.PositionSizePercent.Value > 0 ? Model.PositionSizePercent.Value : 100m).ToString("0.##"))%</strong> of cash per trade.
-        &nbsp;&middot;&nbsp;
+        &middot;
         Trade direction:
         @switch (Model.TradeDirection)
         {
@@ -140,7 +140,7 @@
 </section>
 
 <section>
-    <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="detail-header" style="display: flex; justify-content: space-between; align-items: center;">
         <h3>Signal Rules</h3>
         <a asp-action="ManageComparisons" asp-route-strategyId="@Model.Id" class="btn btn-outlined btn-sm">Manage Rules</a>
     </div>
@@ -194,6 +194,6 @@
     }
 </section>
 
-<section style="display: flex; gap: 1rem;">
+<section class="detail-header" style="display: flex; gap: 1rem;">
     <a asp-action="Index" class="btn btn-outlined">← Back to Strategies</a>
 </section>

@@ -121,7 +121,7 @@
             </div>
             <div class="form-group">
                 <label asp-for="PositionSizePercent" class="form-label">Position Size (%) &mdash; optional</label>
-                <input asp-for="PositionSizePercent" class="form-control" type="number" step="1" min="1" max="100" placeholder="100" />
+                <input asp-for="PositionSizePercent" class="form-control" type="number" step="0.01" min="1" max="100" placeholder="100" />
                 <small class="form-help">% of available cash to invest per trade. Blank = 100%.</small>
                 <span asp-validation-for="PositionSizePercent" class="text-danger"></span>
             </div>

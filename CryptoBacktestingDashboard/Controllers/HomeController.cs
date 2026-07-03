@@ -1,5 +1,7 @@
 using CryptoBacktestingDashboard.Models;
 using CryptoBacktestingDashboard.Repositories.EF;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Linq;
@@ -8,29 +10,34 @@ using Microsoft.Extensions.Logging;
 
 namespace CryptoBacktestingDashboard.Controllers
 {
+    [Authorize]
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
         private readonly BacktestSessionRepository _sessionRepository;
         private readonly BacktestStrategyRepository _strategyRepository;
         private readonly CryptoPairRepository _pairRepository;
+        private readonly UserManager<AppUser> _userManager;
 
         public HomeController(
             ILogger<HomeController> logger,
             BacktestSessionRepository sessionRepository,
             BacktestStrategyRepository strategyRepository,
-            CryptoPairRepository pairRepository)
+            CryptoPairRepository pairRepository,
+            UserManager<AppUser> userManager)
         {
             _logger = logger;
             _sessionRepository = sessionRepository;
             _strategyRepository = strategyRepository;
             _pairRepository = pairRepository;
+            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index()
         {
-            var sessions = await _sessionRepository.GetItemsAsync();
-            var strategies = await _strategyRepository.GetItemsAsync();
+            var userId = _userManager.GetUserId(User);
+            var sessions = await _sessionRepository.GetItemsAsync(userId);
+            var strategies = await _strategyRepository.GetItemsAsync(userId);
             var pairs = await _pairRepository.GetItemsAsync();
 
             ViewData["TotalSessions"] = sessions.Count;

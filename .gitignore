@@ -29,14 +29,18 @@ bld/
 *.sln.docstates
 *.vcxproj.filters
 
-# Entity Framework
-Migrations/
-
 # Local database files
 *.db
 *.sqlite
 *.sqlite3
 *.mdb
+
+# Publish output / editor-local config / generated test reports / user uploads
+publish/
+.cursor/
+playwright-tests/playwright-report/
+playwright-tests/test-results/
+CryptoBacktestingDashboard/wwwroot/uploads/
 
 # Rider
 .idea/

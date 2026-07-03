@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Crypto Backtesting Dashboard</title>
+    <script>
+        (function () {
+            var t = localStorage.getItem('theme');
+            if (t) document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/custom.css" asp-append-version="true" />
+</head>
+<body class="auth-body">
+    <!-- Dot-grid animated background (canvas) -->
+    <canvas id="dotGridCanvas" class="dot-grid-canvas"></canvas>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <div style="position: fixed; top: 1rem; left: 1.5rem; z-index: 100;">
+        <a href="/" style="font-family: var(--font-display); font-size: 12px; font-weight: 500; color: var(--rui-cool-gray); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; transition: color 0.2s ease;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back to Dashboard
+        </a>
+    </div>
+
+    <main class="auth-main">
+        @RenderBody()
+    </main>
+
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.6.0.min.js"></script>
+
+    <script>
+        // Toast notification system
+        function showToast(message, type) {
+            var container = document.getElementById('toast-container');
+            var toast = document.createElement('div');
+            toast.className = 'toast toast-' + type;
+            var icon = type === 'success' ? '✓' : '✕';
+            toast.innerHTML =
+                '<span class="toast-icon">' + icon + '</span>' +
+                '<span class="toast-body">' + message + '</span>' +
+                '<button class="toast-close" onclick="dismissToast(this.parentElement)">✕</button>' +
+                '<div class="toast-progress"></div>';
+            container.appendChild(toast);
+            setTimeout(function () { dismissToast(toast); }, 4000);
+        }
+
+        function dismissToast(toast) {
+            if (!toast || toast.classList.contains('hiding')) return;
+            toast.classList.add('hiding');
+            setTimeout(function () { if (toast && toast.parentElement) toast.parentElement.removeChild(toast); }, 300);
+        }
+
+        @if (TempData["Success"] != null)
+        {
+            <text>document.addEventListener('DOMContentLoaded', function () { showToast('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Success"]?.ToString()).Trim('"'))', 'success'); });</text>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <text>document.addEventListener('DOMContentLoaded', function () { showToast('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Error"]?.ToString()).Trim('"'))', 'danger'); });</text>
+        }
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        // Dot-grid animated background with smooth repulsion
+        (function () {
+            var canvas = document.getElementById('dotGridCanvas');
+            if (!canvas) return;
+
+            var ctx = canvas.getContext('2d');
+
+            // ── Config ──────────────────────────────────────────
+            var SPACING = 76;
+            var DOT_RADIUS = 2;
+            var REPULSE_RADIUS = 110;
+            var REPULSE_STRENGTH = 1;
+            var RETURN_SPEED = 0.003;
+            var FRICTION = 0.96;
+
+            // ── State ───────────────────────────────────────────
+            var dots = [];
+            var mouse = { x: -9999, y: -9999, active: false };
+            var w, h;
+
+            function resize() {
+                w = window.innerWidth;
+                h = window.innerHeight;
+                canvas.width = w;
+                canvas.height = h;
+                rebuildGrid();
+            }
+
+            function rebuildGrid() {
+                dots = [];
+                var cols = Math.ceil(w / SPACING) + 1;
+                var rows = Math.ceil(h / SPACING) + 1;
+                var offsetX = (w - (cols - 1) * SPACING) / 2;
+                var offsetY = (h - (rows - 1) * SPACING) / 2;
+
+                for (var r = 0; r < rows; r++) {
+                    for (var c = 0; c < cols; c++) {
+                        var ox = offsetX + c * SPACING;
+                        var oy = offsetY + r * SPACING;
+                        dots.push({
+                            ox: ox, oy: oy,
+                            x: ox, y: oy,
+                            vx: 0, vy: 0
+                        });
+                    }
+                }
+            }
+
+            document.addEventListener('mousemove', function (e) {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+                mouse.active = true;
+            });
+
+            document.addEventListener('mouseleave', function () {
+                mouse.active = false;
+            });
+
+            document.addEventListener('touchmove', function (e) {
+                var t = e.touches[0];
+                if (t) {
+                    mouse.x = t.clientX;
+                    mouse.y = t.clientY;
+                    mouse.active = true;
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', function () {
+                mouse.active = false;
+            });
+
+            function getDotColor() {
+                var theme = document.documentElement.getAttribute('data-theme');
+                return theme === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(27,31,36,0.20)';
+            }
+
+            function animate() {
+                var dotColor = getDotColor();
+                ctx.clearRect(0, 0, w, h);
+
+                var mx = mouse.x;
+                var my = mouse.y;
+                var isActive = mouse.active;
+
+                for (var i = 0; i < dots.length; i++) {
+                    var d = dots[i];
+
+                    if (isActive) {
+                        var dx = d.x - mx;
+                        var dy = d.y - my;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist < REPULSE_RADIUS && dist > 0.1) {
+                            var force = (1 - dist / REPULSE_RADIUS);
+                            var push = force * REPULSE_STRENGTH;
+                            var normX = dx / dist;
+                            var normY = dy / dist;
+                            d.vx += normX * push;
+                            d.vy += normY * push;
+                        }
+                    }
+
+                    d.vx += (d.ox - d.x) * RETURN_SPEED;
+                    d.vy += (d.oy - d.y) * RETURN_SPEED;
+
+                    d.vx *= FRICTION;
+                    d.vy *= FRICTION;
+
+                    d.x += d.vx;
+                    d.y += d.vy;
+
+                    ctx.beginPath();
+                    ctx.arc(d.x, d.y, DOT_RADIUS, 0, Math.PI * 2);
+                    ctx.fillStyle = dotColor;
+                    ctx.fill();
+                }
+
+                requestAnimationFrame(animate);
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+            animate();
+        })();
+    </script>
+</body>
+</html>

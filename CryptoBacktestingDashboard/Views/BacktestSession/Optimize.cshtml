@@ -1,0 +1,197 @@
+@using CryptoBacktestingDashboard.Models.DTO
+@using CryptoBacktestingDashboard.Services
+@model BacktestSession
+
+@{
+    ViewData["Title"] = $"Optimize: {Model.Strategy?.Name} - {Model.CryptoPair?.Symbol}";
+
+    // Every indicator the strategy can sweep: attached indicators + any referenced
+    // only via comparison rules, deduplicated by Id.
+    var indicators = new Dictionary<int, Indicator>();
+    foreach (var ind in Model.Strategy?.Indicators ?? new List<Indicator>())
+        indicators[ind.Id] = ind;
+    foreach (var c in Model.Strategy?.Comparisons ?? new List<IndicatorComparison>())
+    {
+        if (c.IndicatorA != null) indicators[c.IndicatorA.Id] = c.IndicatorA;
+        if (c.IndicatorB != null) indicators[c.IndicatorB.Id] = c.IndicatorB;
+    }
+
+    // Default sweep ranges per indicator type, centered on the indicator's current values.
+    (decimal min, decimal max, decimal step) PeriodRange(Indicator ind) => ind.Type switch
+    {
+        IndicatorType.MovingAverage or IndicatorType.ATR or IndicatorType.BollingerBands or IndicatorType.Stochastic
+            => (Math.Max(2, ind.Period - 5), ind.Period + 5, 2),
+        IndicatorType.MACD => (Math.Max(2, ind.Period - 4), ind.Period + 4, 2),
+        _ => (Math.Max(2, ind.Period - 7), ind.Period + 7, 2)
+    };
+
+    bool HasThreshold(Indicator ind) => ind.Type is not (IndicatorType.MovingAverage or IndicatorType.ATR);
+
+    (decimal min, decimal max, decimal step) ThresholdRange(Indicator ind) => ind.Type switch
+    {
+        IndicatorType.BollingerBands => (Math.Max(0.5m, ind.Threshold - 1), ind.Threshold + 1, 0.5m),
+        IndicatorType.MACD => (Math.Max(ind.Period + 1, ind.Threshold - 6), ind.Threshold + 6, 2),
+        _ => (Math.Max(50, ind.Threshold - 15), Math.Min(95, ind.Threshold + 15), 5)
+    };
+
+    var strategy = Model.Strategy!;
+    var slRange = (min: Math.Max(0.5m, strategy.StopLossPercent - 3), max: strategy.StopLossPercent + 5, step: 1m);
+    var tpRange = (min: Math.Max(1m, strategy.TakeProfitPercent - 5), max: strategy.TakeProfitPercent + 10, step: 2m);
+    var psCurrent = strategy.PositionSizePercent ?? 100m;
+    var psRange = (min: Math.Max(10m, psCurrent - 30), max: 100m, step: 10m);
+    var tsCurrent = strategy.TrailingStopPercent;
+
+    var latestResult = ViewBag.LatestResult as OptimizationResultDTO;
+}
+
+<nav class="breadcrumbs">
+    <a asp-action="Index" asp-controller="BacktestSession">Sessions</a>
+    <span>/</span>
+    <a asp-action="Details" asp-route-id="@Model.Id">@Model.Strategy?.Name @Model.CryptoPair?.Symbol</a>
+    <span>/</span>
+    <span>Optimize</span>
+</nav>
+
+<section>
+    <h2>Optimization Configuration</h2>
+    <p style="font-size: 16px; color: #505a63; margin: 0;">
+        Choose ranges to sweep for @Model.Strategy?.Name on @Model.CryptoPair?.Symbol.
+        Each combination is backtested over @Model.StartDate.ToString("MMM dd, yyyy") – @Model.EndDate.ToString("MMM dd, yyyy")
+        and ranked by a composite score.
+    </p>
+</section>
+
+@if (indicators.Count == 0)
+{
+    <section>
+        <div class="card" style="padding: 2rem;">
+            <p style="color: #8d969e; margin: 0;">This strategy has no indicators to optimize.</p>
+        </div>
+    </section>
+}
+else
+{
+    <section>
+        <h3>Indicator Parameters</h3>
+        <div class="grid grid-2">
+            @foreach (var ind in indicators.Values)
+            {
+                var pr = PeriodRange(ind);
+                var showThreshold = HasThreshold(ind);
+                var tr = showThreshold ? ThresholdRange(ind) : (min: 0m, max: 0m, step: 0m);
+                <div class="card">
+                    <h6>@ind.Name <small style="color:#8d969e;">(@ind.Type, current period @ind.Period@(showThreshold ? $", threshold {ind.Threshold}" : ""))</small></h6>
+
+                    <div class="form-group" style="margin-top: 0.75rem;">
+                        <label class="form-label">Period</label>
+                        <div class="opt-row">
+                            <input type="number" step="1" class="form-control opt-input" data-indicator-id="@ind.Id" data-field="periodMin" value="@pr.min" />
+                            <span>to</span>
+                            <input type="number" step="1" class="form-control opt-input" data-indicator-id="@ind.Id" data-field="periodMax" value="@pr.max" />
+                            <span>step</span>
+                            <input type="number" step="1" class="form-control opt-input opt-step" data-indicator-id="@ind.Id" data-field="periodStep" value="@pr.step" />
+                        </div>
+                    </div>
+
+                    @if (showThreshold)
+                    {
+                        <div class="form-group" style="margin-top: 0.75rem;">
+                            <label class="form-label">Threshold</label>
+                            <div class="opt-row">
+                                <input type="number" step="0.5" class="form-control opt-input" data-indicator-id="@ind.Id" data-field="thresholdMin" value="@tr.min" />
+                                <span>to</span>
+                                <input type="number" step="0.5" class="form-control opt-input" data-indicator-id="@ind.Id" data-field="thresholdMax" value="@tr.max" />
+                                <span>step</span>
+                                <input type="number" step="0.5" class="form-control opt-input opt-step" data-indicator-id="@ind.Id" data-field="thresholdStep" value="@tr.step" />
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+
+    <section>
+        <h3>Risk Parameters</h3>
+        <div class="card">
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">Stop Loss %</label>
+                    <div class="opt-row">
+                        <input type="number" step="0.5" id="slMin" class="form-control opt-risk-input" value="@slRange.min" />
+                        <span>to</span>
+                        <input type="number" step="0.5" id="slMax" class="form-control opt-risk-input" value="@slRange.max" />
+                        <span>step</span>
+                        <input type="number" step="0.5" id="slStep" class="form-control opt-risk-input opt-step" value="@slRange.step" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Take Profit %</label>
+                    <div class="opt-row">
+                        <input type="number" step="0.5" id="tpMin" class="form-control opt-risk-input" value="@tpRange.min" />
+                        <span>to</span>
+                        <input type="number" step="0.5" id="tpMax" class="form-control opt-risk-input" value="@tpRange.max" />
+                        <span>step</span>
+                        <input type="number" step="0.5" id="tpStep" class="form-control opt-risk-input opt-step" value="@tpRange.step" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Trailing Stop % <small style="color:#8d969e;">(0 = off)</small></label>
+                    <div class="opt-row">
+                        <input type="number" step="0.5" id="tsMin" class="form-control opt-risk-input" value="@(tsCurrent.HasValue ? "0" : "")" />
+                        <span>to</span>
+                        <input type="number" step="0.5" id="tsMax" class="form-control opt-risk-input" value="@(tsCurrent.HasValue ? (tsCurrent.Value + 3).ToString(System.Globalization.CultureInfo.InvariantCulture) : "")" />
+                        <span>step</span>
+                        <input type="number" step="0.5" id="tsStep" class="form-control opt-risk-input opt-step" value="@(tsCurrent.HasValue ? "0.5" : "")" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Position Size %</label>
+                    <div class="opt-row">
+                        <input type="number" step="5" id="psMin" class="form-control opt-risk-input" value="@psRange.min" />
+                        <span>to</span>
+                        <input type="number" step="5" id="psMax" class="form-control opt-risk-input" value="@psRange.max" />
+                        <span>step</span>
+                        <input type="number" step="5" id="psStep" class="form-control opt-risk-input opt-step" value="@psRange.step" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="detail-header" style="display:flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <button id="startOptBtn" type="button" class="btn btn-primary" style="padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
+            ⚡ Start Optimization
+        </button>
+        <span id="comboEstimate" class="form-help"></span>
+    </section>
+
+    <section id="progressSection" class="card" style="display:none; padding: 1.5rem;">
+        <p id="progressStatus" class="optimization-status" style="margin: 0 0 0.75rem 0; font-weight: 600;">Starting…</p>
+        <div class="optimization-progress">
+            <div id="progressBar" class="optimization-progress-bar" style="width: 0%;"></div>
+        </div>
+        <p id="progressBest" style="margin: 0.75rem 0 0 0; color: #505a63; font-size: 0.9rem;"></p>
+    </section>
+}
+
+<section id="resultSection"></section>
+
+<section style="display: flex; gap: 1rem;">
+    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outlined">← Back to Session</a>
+</section>
+
+@section Scripts {
+    <script>
+        window.optimizationConfig = {
+            sessionId: @Model.Id,
+            latestResult: @(latestResult != null
+                ? Html.Raw(System.Text.Json.JsonSerializer.Serialize(latestResult, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }))
+                : Html.Raw("null"))
+        };
+    </script>
+    <script src="~/js/optimization-flow.js"></script>
+}

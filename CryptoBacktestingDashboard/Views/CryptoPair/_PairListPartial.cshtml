@@ -2,6 +2,8 @@
 
 @{
     var priceChanges = ViewData["PriceChanges"] as Dictionary<int, decimal?>;
+    var candleCounts = ViewData["CandleCounts"] as Dictionary<int, int> ?? new Dictionary<int, int>();
+    int CandleCountFor(CryptoPair p) => candleCounts.TryGetValue(p.Id, out var n) ? n : (p.CandleDataHistory?.Count ?? 0);
     var _curPage = (int?)ViewData["CurrentPage"] ?? 0;
     var _totPages = (int?)ViewData["TotalPages"] ?? 0;
     var _totCount = (int?)ViewData["TotalCount"] ?? 0;
@@ -43,7 +45,7 @@
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #c9c9cd;">
                     <div class="metric">
-                        <div class="metric-value">@(pair.CandleDataHistory?.Count ?? 0)</div>
+                        <div class="metric-value">@CandleCountFor(pair)</div>
                         <div class="metric-label">Candles</div>
                     </div>
                     <div class="metric">

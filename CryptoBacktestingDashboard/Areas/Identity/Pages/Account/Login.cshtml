@@ -1,0 +1,70 @@
+@page
+@model LoginModel
+
+@{
+    ViewData["Title"] = "Log in";
+}
+
+<div class="auth-brand">
+    <div class="auth-brand__name">Crypto Backtesting</div>
+    <div class="auth-brand__sub">Algorithmic Trading Analytics</div>
+</div>
+
+<div class="page-hero">
+    <h1 class="page-hero__title">Welcome</h1>
+    <p class="page-hero__subtitle">Log in to manage your strategies and backtests.</p>
+</div>
+
+<div class="form-card">
+    <form id="account" method="post" class="form-shell">
+        <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+        <div class="form-group">
+            <label asp-for="Input.Email" class="form-label">Email</label>
+            <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+            <span asp-validation-for="Input.Email" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Input.Password" class="form-label">Password</label>
+            <input asp-for="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="Your password" />
+            <span asp-validation-for="Input.Password" class="text-danger"></span>
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+            <input class="form-check-input" type="checkbox" asp-for="Input.RememberMe" />
+            <label asp-for="Input.RememberMe" class="form-label" style="margin: 0;">Remember me</label>
+        </div>
+
+        <hr class="form-divider" />
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <button id="login-submit" type="submit" class="btn btn-primary" style="width: 100%;">Log in</button>
+            <div style="text-align: center; display: flex; flex-direction: column; gap: 0.35rem;">
+                <small class="form-help"><a asp-page="./ForgotPassword">Forgot your password?</a></small>
+                <small class="form-help">Don't have an account? <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Register as a new user</a></small>
+            </div>
+        </div>
+    </form>
+</div>
+
+@if ((Model.ExternalLogins?.Count ?? 0) > 0)
+{
+    <div class="form-card" style="margin-top: 1.5rem; text-align: center;">
+        <h3 style="margin-top: 0; font-size: 1rem; margin-bottom: 1rem;">Or log in with</h3>
+        <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-shell">
+            <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+                @foreach (var provider in Model.ExternalLogins!)
+                {
+                    <button type="submit" class="btn btn-outline" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">
+                        @provider.DisplayName
+                    </button>
+                }
+            </div>
+        </form>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -16,6 +16,12 @@ namespace CryptoBacktestingDashboard.Models.Crypto
     {
         [Key]
         public int Id { get; set; }
+
+        [Required]
+        public string AppUserId { get; set; }
+
+        [ForeignKey(nameof(AppUserId))]
+        public virtual AppUser AppUser { get; set; }
         public string? Name { get; set; }
         public string? Description { get; set; }
         public bool IsActive { get; set; }

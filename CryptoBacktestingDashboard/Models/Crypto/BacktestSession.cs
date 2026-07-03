@@ -9,6 +9,12 @@ namespace CryptoBacktestingDashboard.Models.Crypto
     {
         [Key]
         public int Id { get; set; }
+
+        [Required]
+        public string AppUserId { get; set; }
+
+        [ForeignKey(nameof(AppUserId))]
+        public virtual AppUser AppUser { get; set; }
         [Required(ErrorMessage = "Strategy is required")]
         [ForeignKey("Strategy")]
         public int StrategyId { get; set; }
@@ -42,9 +48,13 @@ namespace CryptoBacktestingDashboard.Models.Crypto
         // 1-N relationship: Session has many results/trades
         public virtual ICollection<BacktestResult> Results { get; set; }
 
+        // 1-N relationship: Session has many optimization runs
+        public virtual ICollection<OptimizationRun> OptimizationRuns { get; set; }
+
         public BacktestSession()
         {
             Results = new List<BacktestResult>();
+            OptimizationRuns = new List<OptimizationRun>();
             ExecutedAt = DateTime.Now;
             IsOptimized = false;
         }

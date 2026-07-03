@@ -22,7 +22,19 @@
       "Bash(dotnet run *)",
       "Bash(Start-Sleep -Seconds 8)",
       "Bash(Write-Host \"App should be starting...\")",
-      "PowerShell(Get-Process -Name CryptoBacktestingDashboard -ErrorAction SilentlyContinue)"
+      "PowerShell(Get-Process -Name CryptoBacktestingDashboard -ErrorAction SilentlyContinue)",
+      "Bash(git remote *)",
+      "Bash(git update-index *)",
+      "Bash(git push *)",
+      "Bash(git ls-remote *)",
+      "PowerShell(Get-Process *)",
+      "Bash(powershell *)",
+      "Bash(pkill -f \"CryptoBacktestingDashboard.dll\")",
+      "Bash(pkill -f \"dotnet run\")",
+      "Bash(dotnet user-secrets *)",
+      "Bash(dotnet test *)",
+      "Bash(dotnet add *)",
+      "Bash(git check-ignore *)"
     ]
   }
 }

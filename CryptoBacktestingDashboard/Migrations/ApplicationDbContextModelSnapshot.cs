@@ -37,6 +37,40 @@ namespace CryptoBacktestingDashboard.Migrations
                     b.ToTable("BacktestStrategyIndicator");
                 });
 
+            modelBuilder.Entity("CryptoBacktestingDashboard.Models.AiChatLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateKey")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "DateKey");
+
+                    b.ToTable("AiChatLogs");
+                });
+
             modelBuilder.Entity("CryptoBacktestingDashboard.Models.AppUser", b =>
                 {
                     b.Property<string>("Id")
@@ -188,34 +222,6 @@ namespace CryptoBacktestingDashboard.Migrations
                     b.HasIndex("BacktestSessionId");
 
                     b.ToTable("BacktestResults");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            BacktestSessionId = 1,
-                            Commission = 10m,
-                            EntryPrice = 63000m,
-                            EntryTime = new DateTime(2026, 1, 5, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ExitPrice = 65000m,
-                            ExitTime = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsWinningTrade = true,
-                            Quantity = 0.1m,
-                            TradeType = 0
-                        },
-                        new
-                        {
-                            Id = 2,
-                            BacktestSessionId = 1,
-                            Commission = 10m,
-                            EntryPrice = 64500m,
-                            EntryTime = new DateTime(2026, 1, 20, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ExitPrice = 64000m,
-                            ExitTime = new DateTime(2026, 2, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsWinningTrade = false,
-                            Quantity = 0.1m,
-                            TradeType = 0
-                        });
                 });
 
             modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.BacktestSession", b =>
@@ -225,6 +231,10 @@ namespace CryptoBacktestingDashboard.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AppUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("CryptoPairId")
                         .HasColumnType("int");
@@ -252,25 +262,13 @@ namespace CryptoBacktestingDashboard.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AppUserId");
+
                     b.HasIndex("CryptoPairId");
 
                     b.HasIndex("StrategyId");
 
                     b.ToTable("BacktestSessions");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CryptoPairId = 1,
-                            EndDate = new DateTime(2026, 3, 31, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            ExecutedAt = new DateTime(2026, 4, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            FinalBalance = 12350m,
-                            InitialBalance = 10000m,
-                            IsOptimized = true,
-                            StartDate = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            StrategyId = 1
-                        });
                 });
 
             modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.BacktestStrategy", b =>
@@ -280,6 +278,10 @@ namespace CryptoBacktestingDashboard.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AppUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -319,23 +321,9 @@ namespace CryptoBacktestingDashboard.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("BacktestStrategies");
+                    b.HasIndex("AppUserId");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2026, 6, 10, 18, 28, 1, 418, DateTimeKind.Local).AddTicks(7373),
-                            Description = "A simple RSI strategy",
-                            InitialCapital = 10000m,
-                            IsActive = true,
-                            LookbackPeriod = 100,
-                            Name = "RSI Strategy",
-                            PositionSizePercent = 100m,
-                            StopLossPercent = 5m,
-                            TakeProfitPercent = 10m,
-                            TradeDirection = 0
-                        });
+                    b.ToTable("BacktestStrategies");
                 });
 
             modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.CandleData", b =>
@@ -415,7 +403,7 @@ namespace CryptoBacktestingDashboard.Migrations
                         {
                             Id = 1,
                             BaseAsset = "BTC",
-                            CreatedAt = new DateTime(2026, 6, 10, 18, 28, 1, 418, DateTimeKind.Local).AddTicks(7101),
+                            CreatedAt = new DateTime(2026, 7, 3, 11, 22, 29, 832, DateTimeKind.Local).AddTicks(130),
                             CurrentPrice = 60000m,
                             QuoteAsset = "USD",
                             Symbol = "BTC/USD"
@@ -424,7 +412,7 @@ namespace CryptoBacktestingDashboard.Migrations
                         {
                             Id = 2,
                             BaseAsset = "ETH",
-                            CreatedAt = new DateTime(2026, 6, 10, 18, 28, 1, 418, DateTimeKind.Local).AddTicks(7105),
+                            CreatedAt = new DateTime(2026, 7, 3, 11, 22, 29, 832, DateTimeKind.Local).AddTicks(134),
                             CurrentPrice = 2000m,
                             QuoteAsset = "USD",
                             Symbol = "ETH/USD"
@@ -465,7 +453,7 @@ namespace CryptoBacktestingDashboard.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 6, 10, 18, 28, 1, 418, DateTimeKind.Local).AddTicks(7338),
+                            CreatedAt = new DateTime(2026, 7, 3, 11, 22, 29, 832, DateTimeKind.Local).AddTicks(258),
                             Description = "Relative Strength Index",
                             Name = "RSI",
                             Period = 14,
@@ -475,7 +463,7 @@ namespace CryptoBacktestingDashboard.Migrations
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 6, 10, 18, 28, 1, 418, DateTimeKind.Local).AddTicks(7342),
+                            CreatedAt = new DateTime(2026, 7, 3, 11, 22, 29, 832, DateTimeKind.Local).AddTicks(262),
                             Description = "Moving Average Convergence Divergence",
                             Name = "MACD",
                             Period = 12,
@@ -522,6 +510,93 @@ namespace CryptoBacktestingDashboard.Migrations
                     b.HasIndex("IndicatorBId");
 
                     b.ToTable("IndicatorComparisons");
+                });
+
+            modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.OptimizationResult", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("CompositeScore")
+                        .HasColumnType("float");
+
+                    b.Property<decimal>("MaxDrawdownPercent")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("OptimizationRunId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ParamsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Profit")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ProfitFactor")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SharpeApprox")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TotalTrades")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("WinRate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OptimizationRunId");
+
+                    b.ToTable("OptimizationResults");
+                });
+
+            modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.OptimizationRun", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BacktestSessionId")
+                        .HasColumnType("int");
+
+                    b.Property<double>("BestCompositeScore")
+                        .HasColumnType("float");
+
+                    b.Property<string>("BestParamsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("CompletedCombinations")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ParameterGridJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("RanAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TotalCombinations")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BacktestSessionId");
+
+                    b.ToTable("OptimizationRuns");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -700,6 +775,12 @@ namespace CryptoBacktestingDashboard.Migrations
 
             modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.BacktestSession", b =>
                 {
+                    b.HasOne("CryptoBacktestingDashboard.Models.AppUser", "AppUser")
+                        .WithMany()
+                        .HasForeignKey("AppUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("CryptoBacktestingDashboard.Models.Crypto.CryptoPair", "CryptoPair")
                         .WithMany("BacktestSessions")
                         .HasForeignKey("CryptoPairId")
@@ -712,9 +793,22 @@ namespace CryptoBacktestingDashboard.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("AppUser");
+
                     b.Navigation("CryptoPair");
 
                     b.Navigation("Strategy");
+                });
+
+            modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.BacktestStrategy", b =>
+                {
+                    b.HasOne("CryptoBacktestingDashboard.Models.AppUser", "AppUser")
+                        .WithMany()
+                        .HasForeignKey("AppUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AppUser");
                 });
 
             modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.CandleData", b =>
@@ -753,6 +847,28 @@ namespace CryptoBacktestingDashboard.Migrations
                     b.Navigation("IndicatorA");
 
                     b.Navigation("IndicatorB");
+                });
+
+            modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.OptimizationResult", b =>
+                {
+                    b.HasOne("CryptoBacktestingDashboard.Models.Crypto.OptimizationRun", "OptimizationRun")
+                        .WithMany("Results")
+                        .HasForeignKey("OptimizationRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OptimizationRun");
+                });
+
+            modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.OptimizationRun", b =>
+                {
+                    b.HasOne("CryptoBacktestingDashboard.Models.Crypto.BacktestSession", "BacktestSession")
+                        .WithMany("OptimizationRuns")
+                        .HasForeignKey("BacktestSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BacktestSession");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -808,6 +924,8 @@ namespace CryptoBacktestingDashboard.Migrations
 
             modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.BacktestSession", b =>
                 {
+                    b.Navigation("OptimizationRuns");
+
                     b.Navigation("Results");
                 });
 
@@ -825,6 +943,11 @@ namespace CryptoBacktestingDashboard.Migrations
                     b.Navigation("BacktestSessions");
 
                     b.Navigation("CandleDataHistory");
+                });
+
+            modelBuilder.Entity("CryptoBacktestingDashboard.Models.Crypto.OptimizationRun", b =>
+                {
+                    b.Navigation("Results");
                 });
 #pragma warning restore 612, 618
         }

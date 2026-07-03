@@ -3,6 +3,7 @@ using CryptoBacktestingDashboard.Models.Crypto;
 using CryptoBacktestingDashboard.Models.DTO;
 using CryptoBacktestingDashboard.Repositories.EF;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CryptoBacktestingDashboard.Controllers.Api
@@ -13,10 +14,12 @@ namespace CryptoBacktestingDashboard.Controllers.Api
     public class BacktestStrategyApiController : ControllerBase
     {
         private readonly BacktestStrategyRepository _repository;
+        private readonly UserManager<AppUser> _userManager;
 
-        public BacktestStrategyApiController(BacktestStrategyRepository repository)
+        public BacktestStrategyApiController(BacktestStrategyRepository repository, UserManager<AppUser> userManager)
         {
             _repository = repository;
+            _userManager = userManager;
         }
 
         [AllowAnonymous]
@@ -66,6 +69,7 @@ namespace CryptoBacktestingDashboard.Controllers.Api
 
             var item = new BacktestStrategy
             {
+                AppUserId = _userManager.GetUserId(User),
                 Name = dto.Name,
                 Description = dto.Description,
                 IsActive = dto.IsActive,

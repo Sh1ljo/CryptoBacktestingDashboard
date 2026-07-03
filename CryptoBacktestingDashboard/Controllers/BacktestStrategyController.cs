@@ -1,5 +1,8 @@
+using CryptoBacktestingDashboard.Models;
 using CryptoBacktestingDashboard.Models.Crypto;
 using CryptoBacktestingDashboard.Repositories.EF;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using CryptoBacktestingDashboard.Data;
@@ -10,17 +13,24 @@ using System.Threading.Tasks;
 namespace CryptoBacktestingDashboard.Controllers
 {
     [Route("strategies")]
+    [Authorize]
     public class BacktestStrategyController : Controller
     {
         private readonly BacktestStrategyRepository _strategyRepository;
         private readonly IndicatorRepository _indicatorRepository;
         private readonly IndicatorComparisonRepository _comparisonRepository;
+        private readonly UserManager<AppUser> _userManager;
 
-        public BacktestStrategyController(BacktestStrategyRepository strategyRepository, IndicatorRepository indicatorRepository, IndicatorComparisonRepository comparisonRepository)
+        public BacktestStrategyController(
+            BacktestStrategyRepository strategyRepository,
+            IndicatorRepository indicatorRepository,
+            IndicatorComparisonRepository comparisonRepository,
+            UserManager<AppUser> userManager)
         {
             _strategyRepository = strategyRepository;
             _indicatorRepository = indicatorRepository;
             _comparisonRepository = comparisonRepository;
+            _userManager = userManager;
         }
 
         // Built-in risk fields replaced the old separate RiskManagement rule.
@@ -46,7 +56,8 @@ namespace CryptoBacktestingDashboard.Controllers
         [HttpGet("")]
         public async Task<IActionResult> Index(string? q = null, int page = 1, int pageSize = 8)
         {
-            var strategies = await _strategyRepository.GetItemsAsync();
+            var userId = _userManager.GetUserId(User);
+            var strategies = await _strategyRepository.GetItemsAsync(userId);
 
             if (!string.IsNullOrEmpty(q))
             {
@@ -77,13 +88,15 @@ namespace CryptoBacktestingDashboard.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> Details(int id)
         {
-            var strategy = await _strategyRepository.GetItemAsync(id);
+            var userId = _userManager.GetUserId(User);
+            var strategy = await _strategyRepository.GetItemAsync(id, userId);
             if (strategy == null)
                 return NotFound();
 
             return View(strategy);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("create")]
         public async Task<IActionResult> Create()
         {
@@ -93,12 +106,18 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(model);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(BacktestStrategy model, int[] IndicatorIds)
         {
             ViewData["AllIndicators"] = await _indicatorRepository.GetItemsAsync();
             ViewData["SelectedIndicatorIds"] = IndicatorIds ?? new int[0];
+
+            // Set server-side props first, then re-validate so they don't cause errors
+            model.AppUserId = _userManager.GetUserId(User);
+            ModelState.Clear();
+            TryValidateModel(model);
 
             ModelState.Remove("Indicators");
             ModelState.Remove("BacktestSessions");
@@ -127,11 +146,13 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(model);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("edit/{id}")]
         [ActionName("Edit")]
         public async Task<IActionResult> EditGet(int id)
         {
-            var strategy = await _strategyRepository.GetItemAsync(id);
+            var userId = _userManager.GetUserId(User);
+            var strategy = await _strategyRepository.GetItemAsync(id, userId);
             if (strategy == null)
                 return NotFound();
 
@@ -140,12 +161,14 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(strategy);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("edit/{id}")]
         [ActionName("Edit")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditPost(int id, int[] IndicatorIds)
         {
-            var strategy = await _strategyRepository.GetItemAsync(id);
+            var userId = _userManager.GetUserId(User);
+            var strategy = await _strategyRepository.GetItemAsync(id, userId);
             if (strategy == null)
                 return NotFound();
 
@@ -153,6 +176,11 @@ namespace CryptoBacktestingDashboard.Controllers
 
             ViewData["AllIndicators"] = await _indicatorRepository.GetItemsAsync();
             ViewData["SelectedIndicatorIds"] = IndicatorIds ?? new int[0];
+
+            // Set server-side props, clear binding errors, re-validate with values set
+            strategy.AppUserId = userId;
+            ModelState.Clear();
+            TryValidateModel(strategy);
 
             ModelState.Remove("Indicators");
             ModelState.Remove("BacktestSessions");
@@ -183,10 +211,20 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(strategy);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("delete/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
+            var userId = _userManager.GetUserId(User);
+
+            // Admins may delete any strategy; regular users only their own.
+            var strategy = User.IsInRole("Admin")
+                ? await _strategyRepository.GetItemAsync(id)
+                : await _strategyRepository.GetItemAsync(id, userId);
+            if (strategy == null)
+                return NotFound();
+
             await _strategyRepository.DeleteItemAsync(id);
 
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
@@ -197,10 +235,12 @@ namespace CryptoBacktestingDashboard.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpGet("{strategyId}/comparisons")]
         public async Task<IActionResult> ManageComparisons(int strategyId)
         {
-            var strategy = await _strategyRepository.GetItemAsync(strategyId);
+            var userId = _userManager.GetUserId(User);
+            var strategy = await _strategyRepository.GetItemAsync(strategyId, userId);
             if (strategy == null)
                 return NotFound();
 
@@ -214,11 +254,13 @@ namespace CryptoBacktestingDashboard.Controllers
             return View(comparisons);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("{strategyId}/comparisons")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateComparison(int strategyId, IndicatorComparison comparison)
         {
-            var strategy = await _strategyRepository.GetItemAsync(strategyId);
+            var userId = _userManager.GetUserId(User);
+            var strategy = await _strategyRepository.GetItemAsync(strategyId, userId);
             if (strategy == null)
                 return NotFound();
 
@@ -246,6 +288,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return View("ManageComparisons", comparisons);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("{strategyId}/comparisons/{comparisonId}/delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteComparison(int strategyId, int comparisonId)
@@ -267,7 +310,8 @@ namespace CryptoBacktestingDashboard.Controllers
         [HttpGet("search")]
         public async Task<IActionResult> Search(string query)
         {
-            var strategies = await _strategyRepository.GetItemsAsync();
+            var userId = _userManager.GetUserId(User);
+            var strategies = await _strategyRepository.GetItemsAsync(userId);
             var results = strategies
                 .Where(s => string.IsNullOrEmpty(query) || (s.Name?.Contains(query, System.StringComparison.OrdinalIgnoreCase) ?? false))
                 .Take(10)
@@ -277,10 +321,12 @@ namespace CryptoBacktestingDashboard.Controllers
             return Json(results);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("UploadAttachment")]
         public async Task<IActionResult> UploadAttachment(int strategyId, IFormFile file, [FromServices] ApplicationDbContext dbContext)
         {
-            var strategy = await _strategyRepository.GetItemAsync(strategyId);
+            var userId = _userManager.GetUserId(User);
+            var strategy = await _strategyRepository.GetItemAsync(strategyId, userId);
             if (strategy == null) return NotFound();
             if (file == null || file.Length == 0) return BadRequest();
 
@@ -311,6 +357,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return Json(new { success = true });
         }
 
+        [AllowAnonymous]
         [HttpGet("GetAttachments")]
         public IActionResult GetAttachments(int strategyId, [FromServices] ApplicationDbContext dbContext)
         {
@@ -318,6 +365,7 @@ namespace CryptoBacktestingDashboard.Controllers
             return PartialView("_AttachmentList", attachments);
         }
 
+        [Authorize(Roles = "Admin,User")]
         [HttpPost("DeleteAttachment")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAttachment(int id, [FromServices] ApplicationDbContext dbContext)

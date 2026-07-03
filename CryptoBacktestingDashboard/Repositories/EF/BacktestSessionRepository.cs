@@ -16,6 +16,18 @@ namespace CryptoBacktestingDashboard.Repositories.EF
             _context = context;
         }
 
+        // For web controllers — filter by user
+        public async Task<List<BacktestSession>> GetItemsAsync(string userId)
+        {
+            return await _context.BacktestSessions
+                .Include(s => s.Strategy)
+                .Include(s => s.CryptoPair)
+                .Include(s => s.Results)
+                .Where(s => s.AppUserId == userId)
+                .ToListAsync();
+        }
+
+        // For background services (optimization, etc.) — no user filter
         public async Task<List<BacktestSession>> GetItemsAsync()
         {
             return await _context.BacktestSessions
@@ -25,6 +37,17 @@ namespace CryptoBacktestingDashboard.Repositories.EF
                 .ToListAsync();
         }
 
+        // For web controllers — filter by user
+        public async Task<BacktestSession?> GetItemAsync(int id, string userId)
+        {
+            return await _context.BacktestSessions
+                .Include(s => s.Strategy)
+                .Include(s => s.CryptoPair)
+                .Include(s => s.Results)
+                .FirstOrDefaultAsync(m => m.Id == id && m.AppUserId == userId);
+        }
+
+        // For background services — no user filter
         public async Task<BacktestSession?> GetItemAsync(int id)
         {
             return await _context.BacktestSessions
@@ -41,13 +64,29 @@ namespace CryptoBacktestingDashboard.Repositories.EF
             return item;
         }
 
-        public async Task<BacktestSession> UpdateItemAsync(BacktestSession item)
+        // For web controllers — filter by user
+        public async Task<bool> DeleteItemAsync(int id, string userId)
         {
-            _context.Update(item);
+            var item = await _context.BacktestSessions
+                .Include(s => s.Results)
+                .FirstOrDefaultAsync(m => m.Id == id && m.AppUserId == userId);
+            if (item == null)
+            {
+                return false;
+            }
+
+            // Delete related results first to avoid FK violation
+            if (item.Results.Count > 0)
+            {
+                _context.BacktestResults.RemoveRange(item.Results);
+            }
+
+            _context.BacktestSessions.Remove(item);
             await _context.SaveChangesAsync();
-            return item;
+            return true;
         }
 
+        // For background services — no user filter
         public async Task<bool> DeleteItemAsync(int id)
         {
             var item = await _context.BacktestSessions
@@ -68,5 +107,13 @@ namespace CryptoBacktestingDashboard.Repositories.EF
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<BacktestSession> UpdateItemAsync(BacktestSession item)
+        {
+            _context.Update(item);
+            await _context.SaveChangesAsync();
+            return item;
+        }
+
     }
 }

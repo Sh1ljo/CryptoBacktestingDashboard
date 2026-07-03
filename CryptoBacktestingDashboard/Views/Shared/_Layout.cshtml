@@ -23,19 +23,43 @@
     <header>
         <nav class="navbar">
             <span class="navbar-brand">CryptoBacktestingDashboard</span>
-            <div style="flex-grow: 1;"></div>
-            <ul class="nav-links">
-                <li><a asp-area="" asp-controller="Home" asp-action="Index">Dashboard</a></li>
-                <li><a asp-area="" asp-controller="BacktestSession" asp-action="Index">Sessions</a></li>
-                <li><a asp-area="" asp-controller="BacktestStrategy" asp-action="Index">Strategies</a></li>
-                <li><a asp-area="" asp-controller="CryptoPair" asp-action="Index">Pairs</a></li>
-                <li><a asp-area="" asp-controller="Indicator" asp-action="Index">Indicators</a></li>
-                <partial name="_LoginPartial" />
-            </ul>
-            <button class="dark-mode-toggle" id="darkModeToggle" title="Toggle dark mode" aria-label="Toggle dark mode">
-                <svg id="themeIconMoon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                <svg id="themeIconSun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <button class="navbar-toggle" id="navbarToggle" aria-label="Toggle navigation" aria-expanded="false">
+                <span class="navbar-toggle__bar"></span>
+                <span class="navbar-toggle__bar"></span>
+                <span class="navbar-toggle__bar"></span>
             </button>
+            <div class="navbar-collapse" id="navbarCollapse">
+                <ul class="nav-links">
+                    <li><a asp-area="" asp-controller="Home" asp-action="Index">Dashboard</a></li>
+                    <li><a asp-area="" asp-controller="BacktestSession" asp-action="Index">Sessions</a></li>
+                    <li><a asp-area="" asp-controller="BacktestStrategy" asp-action="Index">Strategies</a></li>
+                    <li><a asp-area="" asp-controller="CryptoPair" asp-action="Index">Pairs</a></li>
+                    <li><a asp-area="" asp-controller="Indicator" asp-action="Index">Indicators</a></li>
+                    <partial name="_LoginPartial" />
+                </ul>
+                <!-- Global Search -->
+                <div class="global-search" id="globalSearch">
+                    <div class="global-search__input-wrap">
+                        <svg class="global-search__icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input class="global-search__input" id="globalSearchInput" type="text" placeholder="Search menus, pages & data…" autocomplete="off" aria-label="Global search" />
+                        <button class="global-search__clear" id="globalSearchClear" type="button" aria-label="Clear search">&times;</button>
+                    </div>
+                    <div class="global-search__dropdown" id="globalSearchDropdown">
+                        <div class="global-search__results" id="globalSearchResults"></div>
+                        <div class="global-search__empty" id="globalSearchEmpty">
+                            <p>No results found for "<span id="globalSearchEmptyQuery"></span>"</p>
+                            <p class="global-search__hint">Try searching for strategies, pairs, sessions, indicators, or menu pages</p>
+                        </div>
+                        <div class="global-search__loading" id="globalSearchLoading">
+                            <div class="global-search__spinner"></div>
+                        </div>
+                    </div>
+                </div>
+                <button class="dark-mode-toggle" id="darkModeToggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+                    <svg id="themeIconMoon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <svg id="themeIconSun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
+            </div>
         </nav>
     </header>
 
@@ -49,7 +73,11 @@
         <p>&copy; 2026 Crypto Backtesting Dashboard - Lab 2</p>
     </footer>
 
+    <!-- AI Chat Widget -->
+    <partial name="_AiChatPartial" />
+
     <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.6.0.min.js"></script>
+    <script src="~/js/ai-chat.js" asp-append-version="true"></script>
 
     <script>
         // Toast notification system
@@ -83,6 +111,26 @@
                 sun.style.display = isDark ? '' : 'none';
             }
             applyIcons(document.documentElement.getAttribute('data-theme') === 'dark');
+
+            // Navbar toggle for mobile
+            (function () {
+                var toggle = document.getElementById('navbarToggle');
+                var collapse = document.getElementById('navbarCollapse');
+                if (toggle && collapse) {
+                    toggle.addEventListener('click', function () {
+                        var expanded = toggle.getAttribute('aria-expanded') === 'true';
+                        toggle.setAttribute('aria-expanded', !expanded);
+                        collapse.classList.toggle('navbar-collapse--open');
+                    });
+                    // Close nav when clicking a link inside
+                    collapse.querySelectorAll('a, button').forEach(function (el) {
+                        el.addEventListener('click', function () {
+                            collapse.classList.remove('navbar-collapse--open');
+                            toggle.setAttribute('aria-expanded', 'false');
+                        });
+                    });
+                }
+            })();
 
             var btn = document.getElementById('darkModeToggle');
             if (!btn) return;
@@ -245,6 +293,282 @@
             window.addEventListener('resize', resize);
             resize();
             animate();
+        })();
+
+        // ── Global Search ────────────────────────────────────────────
+        (function () {
+            var input = document.getElementById('globalSearchInput');
+            var dropdown = document.getElementById('globalSearchDropdown');
+            var resultsContainer = document.getElementById('globalSearchResults');
+            var emptyState = document.getElementById('globalSearchEmpty');
+            var emptyQuery = document.getElementById('globalSearchEmptyQuery');
+            var loadingState = document.getElementById('globalSearchLoading');
+            var clearBtn = document.getElementById('globalSearchClear');
+
+            if (!input || !dropdown) return;
+
+            var cache = {};
+            var debounceTimer = null;
+            var selectedIndex = -1;
+            var currentResults = [];
+
+            function debounce(fn, ms) {
+                return function () {
+                    var args = arguments;
+                    var ctx = this;
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(function () { fn.apply(ctx, args); }, ms);
+                };
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                var div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function highlightText(text, query) {
+                if (!text || !query) return escapeHtml(text);
+                var escaped = escapeHtml(text);
+                var q = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                var regex = new RegExp('(' + q + ')', 'gi');
+                return escaped.replace(regex, '<span class="global-search__highlight">$1</span>');
+            }
+
+            function getTypeIcon(type) {
+                switch (type) {
+                    case 'Menu': return 'M';
+                    case 'Page': return 'P';
+                    case 'Strategy': return 'S';
+                    case 'Session': return 'B';
+                    case 'Pair': return '$';
+                    case 'Indicator': return 'I';
+                    default: return '?';
+                }
+            }
+
+            function getIconClass(type) {
+                var map = {
+                    'Menu': 'global-search__item-icon--menu',
+                    'Page': 'global-search__item-icon--page',
+                    'Strategy': 'global-search__item-icon--strategy',
+                    'Session': 'global-search__item-icon--session',
+                    'Pair': 'global-search__item-icon--pair',
+                    'Indicator': 'global-search__item-icon--indicator'
+                };
+                return map[type] || 'global-search__item-icon--menu';
+            }
+
+            function performSearch(query) {
+                if (query.length < 1) {
+                    closeDropdown();
+                    return;
+                }
+
+                // Check cache
+                if (cache[query]) {
+                    renderResults(cache[query], query);
+                    return;
+                }
+
+                // Show loading
+                resultsContainer.innerHTML = '';
+                emptyState.style.display = 'none';
+                loadingState.style.display = 'block';
+                dropdown.classList.add('global-search__dropdown--open');
+
+                var url = '/api/search?q=' + encodeURIComponent(query);
+
+                fetch(url)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        cache[query] = data.results || [];
+                        loadingState.style.display = 'none';
+                        renderResults(cache[query], query);
+                    })
+                    .catch(function () {
+                        loadingState.style.display = 'none';
+                        resultsContainer.innerHTML = '<div class="global-search__empty" style="display:block"><p style="color:var(--rui-danger)">Search failed. Please try again.</p></div>';
+                    });
+            }
+
+            function renderResults(results, query) {
+                currentResults = results;
+                selectedIndex = -1;
+
+                if (!results || results.length === 0) {
+                    resultsContainer.innerHTML = '';
+                    emptyQuery.textContent = query;
+                    emptyState.style.display = 'block';
+                    dropdown.classList.add('global-search__dropdown--open');
+                    return;
+                }
+
+                emptyState.style.display = 'none';
+
+                // Group results by type
+                var groups = {};
+                var typeOrder = ['Menu', 'Page', 'Strategy', 'Session', 'Pair', 'Indicator'];
+                var typeLabels = {
+                    'Menu': 'Navigation',
+                    'Page': 'Pages',
+                    'Strategy': 'Strategies',
+                    'Session': 'Sessions',
+                    'Pair': 'Pairs',
+                    'Indicator': 'Indicators'
+                };
+
+                results.forEach(function (item) {
+                    if (!groups[item.type]) groups[item.type] = [];
+                    groups[item.type].push(item);
+                });
+
+                var html = '';
+                typeOrder.forEach(function (type) {
+                    if (!groups[type] || groups[type].length === 0) return;
+                    html += '<div class="global-search__group-label">' + typeLabels[type] + '</div>';
+                    groups[type].forEach(function (item) {
+                        var labelHtml = highlightText(item.label, query);
+                        var descHtml = item.description ? highlightText(item.description, query) : '';
+                        html += '<a class="global-search__item" href="' + escapeHtml(item.url) + '" data-type="' + item.type + '">' +
+                            '<div class="global-search__item-icon ' + getIconClass(item.type) + '">' + getTypeIcon(item.type) + '</div>' +
+                            '<div class="global-search__item-body">' +
+                            '<div class="global-search__item-label">' + labelHtml + '</div>' +
+                            (descHtml ? '<div class="global-search__item-desc">' + descHtml + '</div>' : '') +
+                            '</div>' +
+                            (item.badge ? '<span class="global-search__item-badge">' + escapeHtml(item.badge) + '</span>' : '') +
+                            '</a>';
+                    });
+                });
+
+                resultsContainer.innerHTML = html;
+                dropdown.classList.add('global-search__dropdown--open');
+            }
+
+            function closeDropdown() {
+                dropdown.classList.remove('global-search__dropdown--open');
+                selectedIndex = -1;
+                currentResults = [];
+            }
+
+            function navigateTo(url) {
+                if (!url) return;
+                closeDropdown();
+                input.value = '';
+                clearBtn.style.display = 'none';
+                window.location.href = url;
+            }
+
+            // ── Event handlers ──────────────────────────────────────
+
+            var debouncedSearch = debounce(function () {
+                var q = input.value.trim();
+                performSearch(q);
+            }, 250);
+
+            input.addEventListener('input', function () {
+                var q = input.value.trim();
+                if (q.length > 0) {
+                    clearBtn.style.display = 'block';
+                } else {
+                    clearBtn.style.display = 'none';
+                    closeDropdown();
+                    return;
+                }
+                debouncedSearch();
+            });
+
+            input.addEventListener('focus', function () {
+                var q = input.value.trim();
+                if (q.length > 0 && currentResults.length > 0) {
+                    dropdown.classList.add('global-search__dropdown--open');
+                }
+            });
+
+            // Click outside to close
+            document.addEventListener('click', function (e) {
+                var searchEl = document.getElementById('globalSearch');
+                if (searchEl && !searchEl.contains(e.target)) {
+                    closeDropdown();
+                }
+            });
+
+            // Keyboard navigation
+            input.addEventListener('keydown', function (e) {
+                var items = resultsContainer.querySelectorAll('.global-search__item');
+
+                switch (e.key) {
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        if (items.length === 0) return;
+                        selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                        updateHighlight(items);
+                        break;
+
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        if (items.length === 0) return;
+                        selectedIndex = Math.max(selectedIndex - 1, -1);
+                        updateHighlight(items);
+                        break;
+
+                    case 'Enter':
+                        e.preventDefault();
+                        if (selectedIndex >= 0 && selectedIndex < items.length) {
+                            navigateTo(items[selectedIndex].getAttribute('href'));
+                        }
+                        break;
+
+                    case 'Escape':
+                        e.preventDefault();
+                        closeDropdown();
+                        input.blur();
+                        break;
+                }
+            });
+
+            function updateHighlight(items) {
+                items.forEach(function (el, i) {
+                    el.classList.toggle('global-search__item--highlighted', i === selectedIndex);
+                });
+                if (selectedIndex >= 0 && items[selectedIndex]) {
+                    items[selectedIndex].scrollIntoView({ block: 'nearest' });
+                }
+            }
+
+            // Delegate clicks on result items
+            resultsContainer.addEventListener('click', function (e) {
+                var item = e.target.closest('.global-search__item');
+                if (item) {
+                    e.preventDefault();
+                    navigateTo(item.getAttribute('href'));
+                }
+            });
+
+            // Clear button
+            clearBtn.addEventListener('click', function () {
+                input.value = '';
+                clearBtn.style.display = 'none';
+                closeDropdown();
+                input.focus();
+            });
+
+            // Close on Escape from anywhere
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    closeDropdown();
+                }
+            });
+
+            // ── Keyboard shortcut: Ctrl+K / Cmd+K ──────────────────
+            document.addEventListener('keydown', function (e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    input.focus();
+                    input.select();
+                }
+            });
         })();
     </script>
 </body>
